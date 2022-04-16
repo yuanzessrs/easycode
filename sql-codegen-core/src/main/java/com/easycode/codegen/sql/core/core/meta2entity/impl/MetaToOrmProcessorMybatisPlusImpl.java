@@ -49,7 +49,7 @@ public class MetaToOrmProcessorMybatisPlusImpl implements IMetaToOrmProcessor<My
             params.put("entity", table);
             params.put("config", config);
             File file = new File(config.getEntityDirPath() + table.getClassName() + ".java");
-            VelocityUtils.render("template" + File.separator + "mybatis_plus_entity.vm", params, file);
+            VelocityUtils.render("template/mybatis_plus_entity.vm", params, file);
         });
     }
 
