@@ -1,0 +1,65 @@
+## 包名
+package ${config.basePackage}.${config.controllerPackageName};
+
+## import 依赖
+#foreach($import in $handlerClass.getControllerImportsWithFilter())
+import $import;
+#end
+import ${config.basePackage}.${config.dtoPackageName}.*;
+import ${config.basePackage}.${config.servicePackageName}.${handlerClass.serviceName};
+
+/**
+ * @class-name ${handlerClass.name}
+ * @description ${handlerClass.description}
+ * @author api-codegen
+ **/
+#foreach($annotation in $handlerClass.getAnnotations().getAscSorted())
+${annotation.toString()}
+#end
+#foreach($annotation in $handlerClass.getControllerAnnotations().getAscSorted())
+${annotation.toString()}
+#end
+public class ${handlerClass.name} {
+
+    private final ${handlerClass.serviceName} service;
+
+    public ${handlerClass.name}(${handlerClass.serviceName} service) {
+        this.service = service;
+    }
+#if($handlerClass.handlerMethods)
+#foreach($handlerMethod in $handlerClass.handlerMethods)
+
+    /**
+     * <pre>
+     * $handlerMethod.summary @Summary
+     * </pre>
+     * $handlerMethod.description @Description
+     *
+#foreach($handlerMethodParam in $handlerMethod.handlerMethodParams)
+     * @param ${handlerMethodParam.name} ${handlerMethodParam.description}
+#end
+## 如果返回类型不为void，则需要增加描述
+#if($handlerMethod.handlerMethodReturn.hasReturn())
+     * @return ${handlerMethod.handlerMethodReturn.description}
+     */
+#else
+     */
+#end
+#foreach($annotation in $handlerMethod.getAnnotations().getDescSorted())
+    ${annotation.toString()}
+#end
+#foreach($annotation in $handlerMethod.getControllerAnnotations().getDescSorted())
+    ${annotation.toString()}
+#end
+    public $handlerMethod.handlerMethodReturn.type ${handlerMethod.methodName}(#if($handlerMethod.handlerMethodParams)#foreach($handlerMethodParam in $handlerMethod.handlerMethodParams)
+#foreach($annotation in $handlerMethodParam.getAnnotations().getAscSorted())${annotation.toString()} #end
+#foreach($annotation in $handlerMethodParam.getControllerAnnotations().getAscSorted())${annotation.toString()} #end
+${handlerMethodParam.type} ${handlerMethodParam.name}#if($velocityCount<$handlerMethod.handlerMethodParams.size()),
+          ${handlerMethod.paramPadding()}   #end
+#end#end) {
+       #if($handlerMethod.handlerMethodReturn.hasReturn()) return#end service.${handlerMethod.methodName}(#foreach($handlerMethodParam in $handlerMethod.handlerMethodParams)${handlerMethodParam.name}#if($velocityCount<$handlerMethod.handlerMethodParams.size()), #end#end);
+    }
+#end
+#end
+
+}

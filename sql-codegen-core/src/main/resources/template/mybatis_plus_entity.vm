@@ -1,0 +1,46 @@
+package ${config.basePackage}.${config.entityPackageName};
+
+#foreach($import in $entity.imports)
+import ${import};
+#end
+
+/**
+ * @class-name ${entity.className} class
+ * @author sql-codegen
+ * @description ${entity.tableComment}
+ **/
+@TableName(value = "${entity.tableName}")
+public class ${entity.className} {
+#foreach($column in $entity.columns)
+
+    /**
+     * ${column.comment}  DbType: ${column.dbTypeDesc}
+     */
+#if($column.isPrimaryKey)
+    @TableId(value = "${column.columnName}"#if(${column.isAutoIncrement}), type = IdType.AUTO#end)
+#else
+    @TableField(value = "${column.columnName}"#if($column.isAutoFillWhenInsert), fill = FieldFill.INSERT#elseif($column.isAutoFillWhenUpdate), fill = FieldFill.UPDATE#elseif($column.isAutoFillWhenInsertOrUpdate), fill = FieldFill.INSERT_UPDATE#end)
+#end
+#if(${column.isLogicalDeleteField})
+    @TableLogic(value = "${column.logicalNotDeletedValue}", delval = "${column.logicalDeletedValue}")
+#end
+    private ${column.getTypeName()} ${column.fieldName};
+#end
+#foreach($column in $entity.columns)
+
+    public ${column.getTypeName()} get${column.upperCamelCaseName()}() {
+        return ${column.fieldName};
+    }
+    
+    public void set${column.upperCamelCaseName()}(${column.getTypeName()} ${column.fieldName}) {
+        this.${column.fieldName} = ${column.fieldName};
+    }
+#end
+#foreach($mapping in $entity.fieldMappings)
+
+    public static final String ${mapping.key} = "${mapping.value}";
+#end
+
+    public static final String TABLE_NAME = "${entity.tableName}";
+
+}

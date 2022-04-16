@@ -1,0 +1,43 @@
+## 包名
+package ${config.basePackage}.${config.servicePackageName};
+
+## import 依赖
+#foreach($import in $handlerClass.getServiceImportsWithFilter())
+import $import;
+#end
+import ${config.basePackage}.${config.dtoPackageName}.*;
+
+/**
+ * @interface-name ${handlerClass.serviceName}
+ * @description ${handlerClass.description}
+ * @author api-codegen
+ **/
+public interface ${handlerClass.serviceName} {
+
+#if($handlerClass.handlerMethods)
+#foreach($handlerMethod in $handlerClass.handlerMethods)
+
+    /**
+     * <pre>
+     * $handlerMethod.summary @Summary
+     * </pre>
+     * $handlerMethod.description @Description
+     *
+#foreach($handlerMethodParam in $handlerMethod.handlerMethodParams)
+     * @param ${handlerMethodParam.name} ${handlerMethodParam.description}
+#end
+## 如果返回类型不为void，则需要增加描述
+#if($handlerMethod.handlerMethodReturn.hasReturn())
+     * @return ${handlerMethod.handlerMethodReturn.description}
+     */
+#else
+     */
+#end
+    public $handlerMethod.handlerMethodReturn.type ${handlerMethod.methodName}(#if($handlerMethod.handlerMethodParams)#foreach($handlerMethodParam in $handlerMethod.handlerMethodParams)
+$handlerMethodParam.type ${handlerMethodParam.name}#if($velocityCount<$handlerMethod.handlerMethodParams.size()),
+          ${handlerMethod.paramPadding()}   #end
+#end#end);
+#end
+#end
+
+}

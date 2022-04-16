@@ -1,0 +1,41 @@
+package ${config.basePackage}.${config.dtoPackageName};
+
+#foreach($import in $definition.getExternalImportsWithFilter())
+import $import;
+#end
+
+/**
+ * @author api-codegen
+ * @class-name ${definition.name}
+ * @description ${definition.description}
+ **/
+#foreach($annotation in $definition.getAnnotations().getDescSorted())
+${annotation.toString()}
+#end
+public class ${definition.name} {
+#foreach($field in $definition.fields)
+
+    /**
+     * ${field.description}
+     */
+#foreach($annotation in $field.getAnnotations().getAscSorted())
+    ${annotation.toString()}
+#end
+    private#if($field.readOnly) final#end ${field.type} ${field.name}$field.value();
+#end
+#foreach($field in $definition.fields)
+
+    public ${field.type} get${field.upperCamelCaseName()}() {
+        return ${field.name};
+    }
+#if($field.readOnly==false)
+
+    public void set${field.upperCamelCaseName()}(${field.type} ${field.name}) {
+        this.${field.name} = ${field.name};
+    }
+#end#end
+#if(${definition.overrideToString})
+    ${definition.overrideToString}
+#end
+
+}
