@@ -4,10 +4,9 @@ import static com.easycode.codegen.api.core.util.SwaggerUtils.getClassNameFromDe
 import static com.easycode.codegen.api.core.util.SwaggerUtils.getClassNameFromRefPath;
 import static com.easycode.codegen.api.core.util.SwaggerUtils.getPropertyDefaultValue;
 
-import com.easycode.codegen.api.core.enums.TypeMapping;
-import com.easycode.codegen.api.core.util.SwaggerVendorExtensions;
 import com.easycode.codegen.api.core.constants.HandlerMethodParamTag;
 import com.easycode.codegen.api.core.constants.SwaggerConstants;
+import com.easycode.codegen.api.core.enums.TypeMapping;
 import com.easycode.codegen.api.core.meta.ApiResolveResult;
 import com.easycode.codegen.api.core.meta.Dto;
 import com.easycode.codegen.api.core.meta.Dto.Field;
@@ -18,6 +17,7 @@ import com.easycode.codegen.api.core.resolver.ResolverContext;
 import com.easycode.codegen.api.core.util.AnnotationUtils;
 import com.easycode.codegen.api.core.util.SpringAnnotations;
 import com.easycode.codegen.api.core.util.SwaggerUtils;
+import com.easycode.codegen.api.core.util.SwaggerVendorExtensions;
 import io.swagger.models.ArrayModel;
 import io.swagger.models.Model;
 import io.swagger.models.ModelImpl;
@@ -231,6 +231,8 @@ public class SwaggerResolver implements IResolver {
                         return null;
                     }
                     ModelImpl modelImpl = (ModelImpl) o.getValue();
+                    Map<String, String> renameMap = SwaggerVendorExtensions
+                            .getRenameMap(modelImpl.getVendorExtensions());
                     // 生成定义
                     Dto dto = new Dto();
                     dto.setName(getClassNameFromDefinitionName(definitionName));
@@ -273,6 +275,14 @@ public class SwaggerResolver implements IResolver {
                                 String aliasNamesJoinString = String.join("、", aliasValues);
                                 log.info("处理DTO，以下字段({})映射Java 字段相同，按照定义顺序，以第一个定义详情为准", aliasNamesJoinString);
                                 return field;
+                            })
+                            .peek(field -> {
+                                if (ObjectUtils.isEmpty(field.getAliasValues())) {
+                                    Optional.ofNullable(renameMap.get(field.getName())).ifPresent(alias->{
+                                        field.setAliasValues(Collections.singletonList(field.getName()));
+                                        field.setName(alias);
+                                    });
+                                }
                             })
                             .peek(field -> {
                                 List<String> aliasValues = field.getAliasValues();

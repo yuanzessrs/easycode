@@ -15,11 +15,33 @@ import org.springframework.util.ObjectUtils;
 
 public class SwaggerVendorExtensions {
 
+    private static final Map<String, AnnotationDefinition> SUPPORT_ANNOTATION_MAP = new HashMap<String, AnnotationDefinition>() {{
+        put("jsonInclude", AnnotationUtils.jsonInclude());
+        put("jsonIgnore", AnnotationUtils.jsonIgnore());
+    }};
+
     public static String getXFieldVal(Map<String, Object> vendorExtensions, String key) {
         return Optional.ofNullable(vendorExtensions)
                 .map(map -> map.get("x-" + key))
                 .map(Object::toString)
                 .orElse(null);
+    }
+
+    public static Map<String, String> getRenameMap(Map<String, Object> vendorExtensions) {
+        Object renameVal = vendorExtensions.get("x-rename-map");
+        if (renameVal == null) {
+            return Collections.emptyMap();
+        }
+        if (renameVal instanceof Map) {
+            Map<String, Object> data = (Map<String, Object>) renameVal;
+
+            Map<String, String> renameMap = new HashMap<>();
+            data.forEach((key, val) -> {
+                renameMap.put(key.trim(), val.toString().trim());
+            });
+            return renameMap;
+        }
+        throw new RuntimeException("注解扩展属性（x-rename-map）的值一定是 {} 或 有值的map!");
     }
 
     public static String getXFormat(Map<String, Object> vendorExtensions) {
@@ -63,11 +85,6 @@ public class SwaggerVendorExtensions {
     public static List<AnnotationDefinition> parseAnnotations(Map<String, Object> vendorExtensions) {
         return parseAnnotations("x-@", vendorExtensions);
     }
-
-    private static final Map<String, AnnotationDefinition> SUPPORT_ANNOTATION_MAP = new HashMap<String, AnnotationDefinition>() {{
-        put("jsonInclude", AnnotationUtils.jsonInclude());
-        put("jsonIgnore", AnnotationUtils.jsonIgnore());
-    }};
 
     public static List<AnnotationDefinition> parsePresetAnnotations(Map<String, Object> vendorExtensions) {
         String xFiledName = "x-@";
