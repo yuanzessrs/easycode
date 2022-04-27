@@ -28,6 +28,7 @@ public class TypeMapping {
         put("blob", "byte[]");
         put("longblob", "byte[]");
 
+        put("int", "Integer");
         put("integer", "Integer");
         put("integer@unsigned", "Long");
         put("mediumint", "Integer");
