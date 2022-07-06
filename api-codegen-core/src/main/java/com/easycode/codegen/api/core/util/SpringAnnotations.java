@@ -56,6 +56,14 @@ public class SpringAnnotations {
         return annotation;
     }
 
+    public static AnnotationDefinition HeaderVariable(String value) {
+        AnnotationDefinition annotation = new AnnotationDefinition();
+        annotation.setAnnotationName("RequestHeader");
+        annotation.getImports().add("org.springframework.web.bind.annotation.RequestHeader");
+        annotation.addProperty(null, value.trim(), true);
+        return annotation;
+    }
+
     public static AnnotationDefinition RequestBody() {
         AnnotationDefinition annotation = new AnnotationDefinition();
         annotation.setAnnotationName("RequestBody");

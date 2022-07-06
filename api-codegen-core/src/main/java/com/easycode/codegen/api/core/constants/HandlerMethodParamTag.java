@@ -21,4 +21,6 @@ public class HandlerMethodParamTag {
      */
     public static final int PATH = 3;
 
+    public static final int HEADER = 4;
+
 }

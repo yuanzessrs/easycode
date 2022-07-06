@@ -1,9 +1,5 @@
 package com.easycode.codegen.api.core.resolver.impl;
 
-import static com.easycode.codegen.api.core.util.SwaggerUtils.getClassNameFromDefinitionName;
-import static com.easycode.codegen.api.core.util.SwaggerUtils.getClassNameFromRefPath;
-import static com.easycode.codegen.api.core.util.SwaggerUtils.getPropertyDefaultValue;
-
 import com.easycode.codegen.api.core.constants.HandlerMethodParamTag;
 import com.easycode.codegen.api.core.constants.SwaggerConstants;
 import com.easycode.codegen.api.core.enums.TypeMapping;
@@ -17,42 +13,30 @@ import com.easycode.codegen.api.core.resolver.ResolverContext;
 import com.easycode.codegen.api.core.util.AnnotationUtils;
 import com.easycode.codegen.api.core.util.SpringAnnotations;
 import com.easycode.codegen.api.core.util.SwaggerUtils;
-import com.easycode.codegen.api.core.util.SwaggerVendorExtensions;
-import io.swagger.models.ArrayModel;
-import io.swagger.models.Model;
-import io.swagger.models.ModelImpl;
-import io.swagger.models.Operation;
-import io.swagger.models.RefModel;
-import io.swagger.models.Response;
-import io.swagger.models.Swagger;
-import io.swagger.models.Tag;
-import io.swagger.models.parameters.BodyParameter;
-import io.swagger.models.parameters.Parameter;
-import io.swagger.models.parameters.PathParameter;
-import io.swagger.models.parameters.QueryParameter;
+import com.easycode.codegen.utils.Methods;
+import io.swagger.models.*;
+import io.swagger.models.parameters.*;
 import io.swagger.models.properties.ArrayProperty;
 import io.swagger.models.properties.Property;
 import io.swagger.models.properties.RefProperty;
-import java.io.File;
-import java.io.FileInputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.easycode.codegen.api.core.util.SwaggerUtils.*;
+import static com.easycode.codegen.api.core.util.SwaggerVendorExtensions.*;
 
 /**
  * @ClassName: SwaggerMetaResolver
@@ -96,7 +80,7 @@ public class SwaggerResolver implements IResolver {
 
     private ApiResolveResult resolveSwagger(Swagger swagger) {
         // 关闭的swagger文档不处理
-        if ("true".equalsIgnoreCase(SwaggerVendorExtensions.getXFieldVal(swagger.getVendorExtensions(), "disabled"))) {
+        if ("true".equalsIgnoreCase(getXFieldVal(swagger.getVendorExtensions(), "disabled"))) {
             // log
             return null;
         }
@@ -169,8 +153,8 @@ public class SwaggerResolver implements IResolver {
                 ));
 
                 // setting handlerMethod params
-                handlerMethod
-                        .setHandlerMethodParams(getHandlerMethodParams(op.getOperationId(), op.getParameters(), dtos));
+                handlerMethod.setHandlerMethodParams(getHandlerMethodParams(op.getOperationId(),
+                        op.getParameters(), dtos, op.getVendorExtensions()));
                 if (handlerMethod.enableRequestBody()) {
                     handlerMethod.getHandlerMethodParams()
                             .stream()
@@ -183,23 +167,18 @@ public class SwaggerResolver implements IResolver {
                 // setting handlerMethod return def
                 handlerMethod.setHandlerMethodReturn(getHandlerMethodReturn(op));
                 // 集成path上的注解, 当前方法的扩展注解
-                handlerMethod.getAnnotations().add(SwaggerVendorExtensions.parseAnnotations(pathExtParams));
-                handlerMethod.getControllerAnnotations()
-                        .add(SwaggerVendorExtensions.parseControllerAnnotations(pathExtParams));
-                handlerMethod.getServiceAnnotations()
-                        .add(SwaggerVendorExtensions.parseServiceAnnotations(pathExtParams));
-                handlerMethod.getFeignClientAnnotations()
-                        .add(SwaggerVendorExtensions.parseFeignClientAnnotations(pathExtParams));
+                handlerMethod.getAnnotations().add(parseAnnotations(pathExtParams));
+                handlerMethod.getControllerAnnotations().add(parseControllerAnnotations(pathExtParams));
+                handlerMethod.getServiceAnnotations().add(parseServiceAnnotations(pathExtParams));
+                handlerMethod.getFeignClientAnnotations().add(parseFeignClientAnnotations(pathExtParams));
 
-                handlerMethod.getAnnotations().add(SwaggerVendorExtensions.parseAnnotations(extParams));
-                handlerMethod.getControllerAnnotations()
-                        .add(SwaggerVendorExtensions.parseControllerAnnotations(extParams));
-                handlerMethod.getServiceAnnotations().add(SwaggerVendorExtensions.parseServiceAnnotations(extParams));
-                handlerMethod.getFeignClientAnnotations()
-                        .add(SwaggerVendorExtensions.parseFeignClientAnnotations(extParams));
+                handlerMethod.getAnnotations().add(parseAnnotations(extParams));
+                handlerMethod.getControllerAnnotations().add(parseControllerAnnotations(extParams));
+                handlerMethod.getServiceAnnotations().add(parseServiceAnnotations(extParams));
+                handlerMethod.getFeignClientAnnotations().add(parseFeignClientAnnotations(extParams));
                 // 集成path上的import, 当前方法的import
-                handlerMethod.getImports().add(SwaggerVendorExtensions.getImports(pathExtParams));
-                handlerMethod.getImports().add(SwaggerVendorExtensions.getImports(extParams));
+                handlerMethod.getImports().add(getImports(pathExtParams));
+                handlerMethod.getImports().add(getImports(extParams));
                 // 收集 handlerMethod
                 handlerClass.getHandlerMethods().add(handlerMethod);
             });
@@ -231,8 +210,7 @@ public class SwaggerResolver implements IResolver {
                         return null;
                     }
                     ModelImpl modelImpl = (ModelImpl) o.getValue();
-                    Map<String, String> renameMap = SwaggerVendorExtensions
-                            .getRenameMap(modelImpl.getVendorExtensions());
+                    Map<String, String> renameMap = getRenameMap(modelImpl.getVendorExtensions());
                     // 生成定义
                     Dto dto = new Dto();
                     dto.setName(getClassNameFromDefinitionName(definitionName));
@@ -240,7 +218,7 @@ public class SwaggerResolver implements IResolver {
                     // 默认注解
                     dto.getAnnotations().add(AnnotationUtils.jsonInclude(), AnnotationUtils.jsonIgnore());
                     // 自定义注解
-                    dto.getAnnotations().add(SwaggerVendorExtensions.parseAnnotations(modelImpl.getVendorExtensions()));
+                    dto.getAnnotations().add(parseAnnotations(modelImpl.getVendorExtensions()));
                     // 属性
                     AtomicInteger index = new AtomicInteger();
                     List<Field> preProcessedFields = Optional.ofNullable(modelImpl.getProperties())
@@ -278,7 +256,7 @@ public class SwaggerResolver implements IResolver {
                             })
                             .peek(field -> {
                                 if (ObjectUtils.isEmpty(field.getAliasValues())) {
-                                    Optional.ofNullable(renameMap.get(field.getName())).ifPresent(alias->{
+                                    Optional.ofNullable(renameMap.get(field.getName())).ifPresent(alias -> {
                                         field.setAliasValues(Collections.singletonList(field.getName()));
                                         field.setName(alias);
                                     });
@@ -313,11 +291,11 @@ public class SwaggerResolver implements IResolver {
         field.setDescription(property.getDescription());
         // 默认拿了 default 值,特殊类型下面在处理格式
         field.setValue(
-                Optional.ofNullable(SwaggerVendorExtensions.getXDefault(property.getVendorExtensions()))
+                Optional.ofNullable(getXDefault(property.getVendorExtensions()))
                         .orElse(getPropertyDefaultValue(property))
         );
         // rename，当存在多个的时候，序列化名称会以第一个为准
-        Optional.ofNullable(SwaggerVendorExtensions.getRenameVal(property.getVendorExtensions()))
+        Optional.ofNullable(getRenameVal(property.getVendorExtensions()))
                 .filter(val -> !ObjectUtils.isEmpty(val))
                 .ifPresent(f -> {
                     String originalName = field.getName();
@@ -325,8 +303,8 @@ public class SwaggerResolver implements IResolver {
                     field.setAliasValues(Collections.singletonList(originalName));
                 });
         // 需要导入的class，需要指定  x-import: xx.xx.xx,yy.yy.yy,zz.zz.zz
-        field.getImports().add(SwaggerVendorExtensions.getImports(property.getVendorExtensions()));
-        field.getAnnotations().add(SwaggerVendorExtensions.parseAnnotations(property.getVendorExtensions()));
+        field.getImports().add(getImports(property.getVendorExtensions()));
+        field.getAnnotations().add(parseAnnotations(property.getVendorExtensions()));
         field.setReadOnly(Boolean.TRUE.equals(property.getReadOnly()));
         if (property.getRequired()) {
             field.getAnnotations().add(AnnotationUtils.notNull());
@@ -344,7 +322,7 @@ public class SwaggerResolver implements IResolver {
             field.setType(className);
             field.getAnnotations().add(AnnotationUtils.valid());
         } else if (SwaggerConstants.TYPE_OBJECT.equalsIgnoreCase(property.getType())) {
-            String xFormat = SwaggerVendorExtensions.getXFormat(property.getVendorExtensions());
+            String xFormat = getXFormat(property.getVendorExtensions());
             if (ObjectUtils.isEmpty(xFormat)) {
                 // 没有配置 x-Type,则对应 java.lang.Object
                 field.setType(Object.class.getSimpleName());
@@ -385,14 +363,14 @@ public class SwaggerResolver implements IResolver {
                     handlerClass.setHandlerMethods(new ArrayList<>(16));
 
                     handlerClass.getAnnotations()
-                            .add(SwaggerVendorExtensions.parseAnnotations(tag.getVendorExtensions()));
+                            .add(parseAnnotations(tag.getVendorExtensions()));
                     handlerClass.getControllerAnnotations()
-                            .add(SwaggerVendorExtensions.parseControllerAnnotations(tag.getVendorExtensions()));
+                            .add(parseControllerAnnotations(tag.getVendorExtensions()));
                     handlerClass.getServiceAnnotations()
-                            .add(SwaggerVendorExtensions.parseServiceAnnotations(tag.getVendorExtensions()));
+                            .add(parseServiceAnnotations(tag.getVendorExtensions()));
                     handlerClass.getFeignClientAnnotations()
-                            .add(SwaggerVendorExtensions.parseFeignClientAnnotations(tag.getVendorExtensions()));
-                    handlerClass.getImports().add(SwaggerVendorExtensions.getImports(tag.getVendorExtensions()));
+                            .add(parseFeignClientAnnotations(tag.getVendorExtensions()));
+                    handlerClass.getImports().add(getImports(tag.getVendorExtensions()));
 
                     handlerClass.getControllerAnnotations().add(
                             SpringAnnotations.Controller(),
@@ -423,30 +401,43 @@ public class SwaggerResolver implements IResolver {
      * @param params 当前op参数
      * @return 方法参数列表
      */
-    private List<HandlerMethod.Param> getHandlerMethodParams(String opName, List<Parameter> params, List<Dto> dtos) {
+    private List<HandlerMethod.Param> getHandlerMethodParams(String opName,
+                                                             List<Parameter> params,
+                                                             List<Dto> dtos,
+                                                             Map<String, Object> vendorExtensions) {
         // 所有参数分三类，path直接存放，query参数合并生成对象，body参数也直接存放
         List<Parameter> parameters = Optional.ofNullable(params).orElse(Collections.emptyList());
+        Map<String, String> renameMap = getRenameMap(vendorExtensions);
         List<HandlerMethod.Param> handlerMethodParams = parameters.stream()
                 .filter(o -> !(o instanceof QueryParameter))
                 .map(parameter -> {
-                    HandlerMethod.Param handlerMethodParam = new HandlerMethod.Param();
-                    handlerMethodParam.setName(parameter.getName());
-                    handlerMethodParam.setDescription(parameter.getDescription());
+                    HandlerMethod.Param param = new HandlerMethod.Param();
+                    String finalName = Methods.or(
+                            getRenameVal(parameter.getVendorExtensions()),
+                            renameMap.get(parameter.getName()),
+                            parameter.getName()
+                    );
+                    param.setName(finalName);
+                    param.setDescription(parameter.getDescription());
                     if (parameter.getRequired()) {
-                        handlerMethodParam.getControllerAnnotations().add(AnnotationUtils.notNull());
-                        handlerMethodParam.getFeignClientAnnotations().add(AnnotationUtils.notNull());
+                        param.getControllerAnnotations().add(AnnotationUtils.notNull());
+                        param.getFeignClientAnnotations().add(AnnotationUtils.notNull());
                     }
-                    if (parameter instanceof PathParameter) {
-                        PathParameter pathParameter = (PathParameter) parameter;
+                    if (parameter instanceof PathParameter || parameter instanceof HeaderParameter) {
+                        AbstractSerializableParameter<?> pathParameter = (AbstractSerializableParameter<?>) parameter;
                         TypeMapping mapping = TypeMapping.parse(pathParameter.getType(), pathParameter.getFormat());
                         // 只支持基本类型，直接获取type就行
-                        handlerMethodParam.setType(mapping.getType());
-                        handlerMethodParam.getImports().add(mapping.getImportValue());
-                        handlerMethodParam.setTag(HandlerMethodParamTag.PATH);
-                        handlerMethodParam.getControllerAnnotations()
-                                .add(SpringAnnotations.PathVariable(handlerMethodParam.getName()));
-                        handlerMethodParam.getFeignClientAnnotations()
-                                .add(SpringAnnotations.PathVariable(handlerMethodParam.getName()));
+                        param.setType(mapping.getType());
+                        param.getImports().add(mapping.getImportValue());
+                        if (parameter instanceof PathParameter) {
+                            param.setTag(HandlerMethodParamTag.PATH);
+                            param.getControllerAnnotations().add(SpringAnnotations.PathVariable(parameter.getName()));
+                            param.getFeignClientAnnotations().add(SpringAnnotations.PathVariable(parameter.getName()));
+                        } else {
+                            param.setTag(HandlerMethodParamTag.HEADER);
+                            param.getControllerAnnotations().add(SpringAnnotations.HeaderVariable(parameter.getName()));
+                            param.getFeignClientAnnotations().add(SpringAnnotations.HeaderVariable(parameter.getName()));
+                        }
                     } else if (parameter instanceof BodyParameter) {
                         BodyParameter bodyParameter = ((BodyParameter) parameter);
                         Model model = bodyParameter.getSchema();
@@ -455,13 +446,13 @@ public class SwaggerResolver implements IResolver {
                         }
                         // TODO 同 DTO   arrayModel refModel modelImpl
                         String typeName = SwaggerUtils.getClassNameFromRefPath(model.getReference());
-                        handlerMethodParam.setType(typeName);
-                        handlerMethodParam.setTag(HandlerMethodParamTag.BODY);
-                        handlerMethodParam.getControllerAnnotations().add(SpringAnnotations.Valid());
+                        param.setType(typeName);
+                        param.setTag(HandlerMethodParamTag.BODY);
+                        param.getControllerAnnotations().add(SpringAnnotations.Valid());
                     } else {
                         throw new RuntimeException("目前只能处理 query path body 三类参数");
                     }
-                    return handlerMethodParam;
+                    return param;
                 }).collect(Collectors.toList());
         List<QueryParameter> queryParameters = parameters.stream()
                 .filter(o -> o instanceof QueryParameter)
@@ -499,7 +490,7 @@ public class SwaggerResolver implements IResolver {
             field.setIndex(index.incrementAndGet());
             field.setName(parameter.getName());
             //获取别名
-            Optional.ofNullable(SwaggerVendorExtensions.getRenameVal(parameter.getVendorExtensions()))
+            Optional.ofNullable(getRenameVal(parameter.getVendorExtensions()))
                     .filter(val -> !ObjectUtils.isEmpty(val))
                     .ifPresent(javaFieldName -> {
                         String apiDefName = field.getName();
@@ -509,8 +500,8 @@ public class SwaggerResolver implements IResolver {
             // 默认值
             field.setValue(Optional.ofNullable(parameter.getDefaultValue()).map(Object::toString).orElse(null));
             field.setDescription(parameter.getDescription());
-            field.getAnnotations().add(SwaggerVendorExtensions.parseAnnotations(parameter.getVendorExtensions()));
-            field.getImports().add(SwaggerVendorExtensions.getImports(parameter.getVendorExtensions()));
+            field.getAnnotations().add(parseAnnotations(parameter.getVendorExtensions()));
+            field.getImports().add(getImports(parameter.getVendorExtensions()));
             if (SwaggerConstants.TYPE_ARRAY.equals(parameter.getType())) {
                 if (null == parameter.getItems()) {
                     throw new RuntimeException("QueryParam array类型参数应该具备子类型!");
@@ -607,14 +598,14 @@ public class SwaggerResolver implements IResolver {
             ModelImpl modelImpl = (ModelImpl) model;
             Map<String, Object> extParams = modelImpl.getVendorExtensions();
             if (SwaggerConstants.TYPE_OBJECT.equalsIgnoreCase(modelImpl.getType())) {
-                String xFormat = SwaggerVendorExtensions.getXFormat(extParams);
+                String xFormat = getXFormat(extParams);
                 if (null == xFormat) {
                     // 没有配置 x-Type,则对应 java.lang.Object
                     handlerMethodReturn.setType(Object.class.getSimpleName());
                 } else {
                     // x-Type: xx ,则对应 xx
                     handlerMethodReturn.setType(xFormat);
-                    handlerMethodReturn.getImports().add(SwaggerVendorExtensions.getImports(extParams));
+                    handlerMethodReturn.getImports().add(getImports(extParams));
                 }
             } else {
                 TypeMapping mapping = TypeMapping.parse(modelImpl.getType(), modelImpl.getFormat());
