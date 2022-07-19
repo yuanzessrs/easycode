@@ -1,12 +1,12 @@
 package com.easycode.codegen.sql.core.core.meta2entity.impl;
 
-import com.easycode.codegen.utils.VelocityUtils;
 import com.easycode.codegen.sql.core.config.GlobalConfig;
 import com.easycode.codegen.sql.core.config.MybatisPlusConfig;
 import com.easycode.codegen.sql.core.config.MybatisPlusConfig.LogicDeleteColumn;
 import com.easycode.codegen.sql.core.core.meta2entity.IMetaToOrmProcessor;
 import com.easycode.codegen.sql.core.core.meta2entity.context.MybatisPlusContext;
 import com.easycode.codegen.sql.core.meta.Table;
+import com.easycode.codegen.utils.VelocityUtils;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -86,6 +86,12 @@ public class MetaToOrmProcessorMybatisPlusImpl implements IMetaToOrmProcessor<My
                 .orElse(Collections.emptyList())
                 .stream()
                 .collect(Collectors.toMap(LogicDeleteColumn::getColumnName, Function.identity()));
+
+        Optional.ofNullable(config.getMybatisPlusConfig())
+                .map(MybatisPlusConfig::getLogicDelColMapping)
+                .map(mapping -> mapping.get(table.getTableName()))
+                .ifPresent(logicDelColumn -> logicDelColMap.put(logicDelColumn.getColumnName(), logicDelColumn));
+
         table.getColumns().forEach(column -> {
             if (logicDelColMap.containsKey(column.getColumnName())) {
                 LogicDeleteColumn logicDeleteColumn = logicDelColMap.get(column.getColumnName());

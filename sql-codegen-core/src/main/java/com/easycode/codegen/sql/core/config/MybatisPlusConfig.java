@@ -1,6 +1,7 @@
 package com.easycode.codegen.sql.core.config;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import lombok.Data;
 
@@ -29,6 +30,8 @@ public class MybatisPlusConfig {
     private String mapperInterfacePackage;
 
     private String mapperXmlDirName;
+
+    private Map<String,LogicDeleteColumn> logicDelColMapping;
 
     @Data
     public static class LogicDeleteColumn {
