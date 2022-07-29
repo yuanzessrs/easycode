@@ -321,7 +321,8 @@ public class SwaggerResolver implements IResolver {
             String className = getClassNameFromRefPath(refProperty.getOriginalRef());
             field.setType(className);
             field.getAnnotations().add(AnnotationUtils.valid());
-        } else if (SwaggerConstants.TYPE_OBJECT.equalsIgnoreCase(property.getType())) {
+        } else if (SwaggerConstants.TYPE_OBJECT.equalsIgnoreCase(property.getType())
+                || hasXFormat(property.getVendorExtensions())) {
             String xFormat = getXFormat(property.getVendorExtensions());
             if (ObjectUtils.isEmpty(xFormat)) {
                 // 没有配置 x-Type,则对应 java.lang.Object

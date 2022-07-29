@@ -2,16 +2,11 @@ package com.easycode.codegen.api.core.util;
 
 import com.easycode.codegen.api.core.constants.SwaggerConstants;
 import com.easycode.codegen.api.core.meta.AnnotationDefinition;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import org.springframework.util.ObjectUtils;
+
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.springframework.util.ObjectUtils;
 
 public class SwaggerVendorExtensions {
 
@@ -46,6 +41,10 @@ public class SwaggerVendorExtensions {
 
     public static String getXFormat(Map<String, Object> vendorExtensions) {
         return getXFieldVal(vendorExtensions, "format");
+    }
+
+    public static boolean hasXFormat(Map<String, Object> vendorExtensions) {
+        return !ObjectUtils.isEmpty(getXFormat(vendorExtensions));
     }
 
     public static String getXDefault(Map<String, Object> vendorExtensions) {
