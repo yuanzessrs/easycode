@@ -1,7 +1,9 @@
 package com.easycode.codegen.api.core.config;
 
-import java.util.List;
 import lombok.Data;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * @class-name: CustomConfig
@@ -11,6 +13,8 @@ import lombok.Data;
  */
 @Data
 public class CustomConfig {
+
+    private Map<String, String> classMappings;
 
     private DTO dto;
 

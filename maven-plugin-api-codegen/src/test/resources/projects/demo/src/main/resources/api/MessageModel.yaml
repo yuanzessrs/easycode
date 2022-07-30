@@ -1,0 +1,460 @@
+swagger: "2.0"
+info:
+  version: 1.0.0
+  title: Message相关模型定义
+paths: { }
+definitions:
+  LatestMessageVO:
+    type: object
+    x-rename-map:
+      must_reply: mustReply
+    properties:
+      uid:
+        type: string
+        x-format: java.lang.Long
+      robot_id:
+        type: string
+        x-format: java.lang.Long
+        x-rename: robotId
+      team_id:
+        type: string
+        x-rename: teamId
+      from:
+        $ref: '#/definitions/MessageFromVO'
+      subtype:
+        type: string
+        description: |
+          给到端上是字符，服务端msg服务中是数字
+          处理逻辑：dichat.modules.message.presenter/wrap-message
+          COMMENT_FILE
+          FILE
+          INFO
+          NORMAL
+          ROBOT 
+          SHARE_FILE 
+          STICKER 
+          PENDING_TEXT 
+          UPLOAD_FILE_PENDING 
+          UPLOAD_PROGRESS 
+          MEETING 
+          FORWARDED 
+          COMBINED 
+          NEWS 
+          NOTIFICATION 
+          USER_CARD 
+          MESSAGE_DELETED 
+          ANNOUNCEMENT 
+          LINK 
+          INTERACTION 
+          VOICE 
+          CHANNEL_CARD 
+          VOIP 
+          RED_ENVELOPE 
+          LOCATION 
+          VIRTUAL_CALL 
+          CUSTOM 
+          VOIP_CONFERENCE 
+          OFFICIAL_CARD 
+          PRIVATE 
+          PRIVATE_VOICE 
+
+
+
+
+      subtypeStr:
+        type: string
+        x-tips: 2020.10.12 获取完整消息接口 兼容subtypeStr; versionNumber:278becad7b4dad0f61deadcee6962484587dae6b
+      vchannel_id:
+        type: string
+        x-format: java.lang.Long
+        x-rename: vchannelId
+      vchannel_seq:
+        type: string
+        x-rename: vchannelSeq
+      content:
+        type: object
+        description: 略
+        x-format: com.fasterxml.jackson.databind.JsonNode
+        #        description: todo
+        #        $ref: '#/definitions/MessageContentVO'
+      text:
+        type: string
+      resource_key:
+        type: string
+        x-rename: resourceKey
+      key:
+        type: string
+      created_ts:
+        type: number
+        x-format: java.lang.Long
+        x-rename: createdTs
+      created_at:
+        type: string
+        x-format: java.util.Date
+        x-rename: createdAt
+        description: Date
+      updated_at:
+        type: string
+        x-format: java.util.Date
+        x-rename: updatedAt
+        description: Date
+      must_reply:
+        # todo 确认功能
+        $ref: '#/definitions/MessageMustReplyVO'
+      owner_confirm:
+        type: integer
+        x-rename: ownerConfirm
+      visitor_confirm:
+        type: integer
+        x-rename: visitorConfirm
+      auto_reply:
+        type: integer
+        x-rename: autoReply
+
+      # file properties  from https://git.xiaojukeji.com/dichat/phoenix/blob/master/packages/chat-lib/src/entity/message/Message.ts#L101-152
+
+      # wrap into by snitch
+      # dichat.modules.message.core/wrap-pin-and-reactions
+      reactions:
+        type: array
+        items:
+          $ref: '#/definitions/MessageReactionVO'
+      pin_id:
+        type: string
+        x-format: java.lang.Long
+        x-rename: pinId
+
+      # dichat.modules.message.core/deal-vchannel-from-dichat-msg
+      #     | message_deleted == subtype && content.recall.is_filter =>  (dissoc vchannel :latest_message)
+
+      # dichat.modules.message.presenter/wrap-message
+      id:
+        type: string
+        x-format: java.lang.Long
+        description: from vchannel_seq, msg没有返回
+      # update subtype from int to string
+      # dichat.modules.message.presenter/wrap-interaction   | process content interaction
+      # add default team id
+      # dichat.modules.message.presenter/delete-msg-deal | message_deleted == subtype && en,  (assoc m :text "This message has been recalled.")
+      # dichat.modules.message.presenter/convert-file-host | process content  file url
+
+
+
+
+      # todo check
+  #      star_id:
+  #        type: string
+  #        x-format: java.lang.Long
+  #        x-rename: starId
+  #
+  #      file_id:
+  #        type: string
+  #        x-format: java.lang.Long
+  #        x-rename: fileId
+  #
+  #      text_i18n:
+  #        type: string
+  #        x-rename: textI18n
+
+
+  MessageReactionVO:
+    type: object
+    properties:
+      reaction:
+        type: string
+      users:
+        type: array
+        items:
+          $ref: '#/definitions/MessageReactionUserVO'
+
+  MessageReactionUserVO:
+    type: object
+    properties:
+      avatar_url:
+        type: string
+        x-rename: avatarUrl
+      fullname:
+        type: string
+        x-rename: fullName
+      id:
+        type: string
+      name:
+        type: string
+      nickname:
+        type: string
+      username:
+        type: string
+
+  # todo 确认用法
+  MessageMustReplyVO:
+    type: object
+    properties:
+      # base properties
+      id:
+        type: string
+      type:
+        type: integer
+      confirm:
+        type: boolean
+
+      # send-must-reply
+      unconfirm_count:
+        type: integer
+        x-rename: unconfirmCount
+      confirm_count:
+        type: integer
+        x-rename: confirmCount
+      # all-must-reply
+      fromUid:
+        type: integer
+        format: int64
+      user_type:
+        type: string
+        x-rename: userType
+
+  MessageFromVO:
+    type: object
+    properties:
+      uid:
+        type: string
+      type:
+        type: string
+        description: User、Robot
+      robot:
+        type: boolean
+
+
+  ### content结构待确认
+  MessageContentVO:
+    type: object
+    properties:
+      reply:
+        $ref: '#/definitions/MessageReplyVO'
+      repost:
+        $ref: '#/definitions/MessageRepostVO'
+      mentions:
+        type: array
+        items:
+          $ref: '#/definitions/MessageMentionVO'
+      attachments:
+        type: array
+        items:
+          $ref: '#/definitions/MessageAttachmentVO'
+      combined:
+        $ref: '#/definitions/CombinedMessageContentVO'
+      file:
+        $ref: '#/definitions/FileMessageContentVO'
+      card:
+        $ref: '#/definitions/CardMessageContentVO'
+      news:
+        $ref: '#/definitions/NewsMessageContentVO'
+      notification:
+        $ref: '#/definitions/NotificationMessageContentVO'
+      info:
+        $ref: '#/definitions/InfoMessageContentVO'
+      image:
+        $ref: '#/definitions/ImageMessageContentVO'
+      link:
+        $ref: '#/definitions/LinkMessageContentVO'
+      interaction:
+        $ref: '#/definitions/InteractionMessageContentVO'
+      voip:
+        $ref: '#/definitions/VoipMessageContentVO'
+      metadata:
+        $ref: '#/definitions/MessageContentMetadataVO'
+      language:
+        $ref: '#/definitions/MessageContentLanguageVO'
+      location:
+        $ref: '#/definitions/LocationMessageContentVO'
+      recall:
+        $ref: '#/definitions/RecallMessageContentVO'
+      custom:
+        $ref: '#/definitions/CustomMessageContentVO'
+      voipConference:
+        $ref: '#/definitions/VoipConferenceMessageContentVO'
+      author:
+        $ref: '#/definitions/MessageAuthorVO'
+
+    required:
+      - author
+
+  FileMessageContentVO:
+    type: object
+    properties: { }
+  CardMessageContentVO:
+    type: object
+    properties:
+      user:
+        type: object
+        description: todo
+      channel:
+        type: object
+        description: todo
+      official:
+        type: object
+        description: todo
+      inviter_uid:
+        type: string
+        x-rename: inviterUid
+  NewsMessageContentVO:
+    type: object
+    properties: { }
+  NotificationMessageContentVO:
+    type: object
+    properties: { }
+  InfoMessageContentVO:
+    type: object
+    properties: { }
+  ImageMessageContentVO:
+    type: object
+    properties: { }
+  LinkMessageContentVO:
+    type: object
+    properties: { }
+  InteractionMessageContentVO:
+    type: object
+    properties: { }
+  VoipMessageContentVO:
+    type: object
+    properties: { }
+  MessageContentMetadataVO:
+    type: object
+    properties:
+      disable_markdown:
+        type: boolean
+        x-rename: disableMarkdown
+  MessageContentLanguageVO:
+    type: object
+    properties: { }
+  LocationMessageContentVO:
+    type: object
+    properties: { }
+  RecallMessageContentVO:
+    type: object
+    properties: { }
+  CustomMessageContentVO:
+    type: object
+    properties: { }
+  VoipConferenceMessageContentVO:
+    type: object
+    properties: { }
+  CombinedMessageContentVO:
+    type: object
+    properties: { }
+  MessageAttachmentImageVO:
+    type: object
+    properties:
+      url:
+        type: string
+      width:
+        type: integer
+      height:
+        type: integer
+  MessageAttachmentVO:
+    type: object
+    properties:
+      title:
+        type: string
+      color:
+        type: string
+      url:
+        type: string
+      text:
+        type: string
+      images:
+        type: array
+        items:
+          $ref: '#/definitions/MessageAttachmentImageVO'
+  MessageRepostVO:
+    type: object
+    properties: { }
+  MessageAuthorVO:
+    type: object
+    x-rename-map:
+      work_status: workStatus
+    properties:
+      last_modified:
+        type: integer
+        format: int64
+        x-rename: lastModified
+      name:
+        type: string
+      work_status:
+        $ref: 'User.yaml#/definitions/UserWorkStatus'
+      nickname:
+        type: string
+      fullname:
+        type: string
+      type:
+        type: string
+      id:
+        type: string
+      team_id:
+        type: string
+        x-rename: team_id
+      avatar_url:
+        type: string
+        x-rename: avatarUrl
+      user_flag:
+        type: string
+        x-rename: userFlag
+  MessageMentionVO:
+    type: object
+    properties:
+      all:
+        type: boolean
+      uid:
+        type: string
+      name:
+        type: string
+      nickname:
+        type: string
+      fullname:
+        type: string
+      has_read:
+        type: boolean
+        x-rename: hasRead
+      user_type:
+        type: string
+        x-rename: userType
+      team_id:
+        type: string
+        x-rename: teamId
+  MessageReplyVO:
+    type: object
+    properties:
+      reply_vchannel_id:
+        type: string
+        x-rename: replyVchannelId
+      raw:
+        type: boolean
+      uid:
+        type: string
+      name:
+        type: string
+      nickname:
+        type: string
+      file:
+        type: object
+        description: todo
+      fullname:
+        type: string
+      message_key:
+        type: string
+        x-rename: messageKey
+      body:
+        type: string
+
+
+
+
+      
+
+
+
+
+
+
+
+
+

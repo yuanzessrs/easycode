@@ -1,0 +1,348 @@
+swagger: "2.0"
+info:
+  version: 1.0.0
+  title: 话题群相关接口
+tags:
+  - name: SubChannel
+    description: 话题群相关接口
+schemes:
+  - http
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /teams/{subdomain}/v1/sub_channels:
+    parameters:
+      - name: subdomain
+        description: 业务方
+        in: path
+        type: string
+        required: true
+    get:
+      tags:
+        - SubChannel
+      summary: 查询话题
+      description: 根据母群id查询话题
+      x-Controller@SignInRequiredAcl:
+        class-name: com.xiaojukeji.dchat.interfaces.rest.api.acl.annotations.SignInRequiredAcl
+      x-Controller@SelfIsNormalRequiredAcl:
+        class-name: com.xiaojukeji.dchat.interfaces.rest.api.acl.annotations.SelfIsNormalRequiredAcl
+      x-Controller@SelfIsActiveRequiredAcl:
+        class-name: com.xiaojukeji.dchat.interfaces.rest.api.acl.annotations.SelfIsActiveRequiredAcl
+      x-Controller@SelfBelongsToTeamRequiredAcl:
+        class-name: com.xiaojukeji.dchat.interfaces.rest.api.acl.annotations.SelfBelongsToTeamRequiredAcl
+      operationId: querySubChannel
+      parameters:
+        - name: vchannel_id
+          description: 母群id
+          required: true
+          in: query
+          type: string
+        - name: category
+          description: 话题分类(joined-已加入的话题，unjoined-未加入的话题)
+          type: string
+          enum:
+            - joined
+            - unjoined
+          default: joined
+          in: query
+        - name: name
+          description: 话题名称
+          type: string
+          in: query
+        - name: page
+          type: integer
+          in: query
+          default: 1
+        - name: size
+          type: integer
+          in: query
+          default: 50
+      responses:
+        200:
+          description: 结果
+          schema:
+            $ref: '#/definitions/QuerySubChannelResultVO'
+
+    post:
+      tags:
+        - SubChannel
+      summary: 创建话题
+      description: 根据msg创建话题
+      x-Controller@SignInRequiredAcl:
+        class-name: com.xiaojukeji.dchat.interfaces.rest.api.acl.annotations.SignInRequiredAcl
+      x-Controller@SelfIsNormalRequiredAcl:
+        class-name: com.xiaojukeji.dchat.interfaces.rest.api.acl.annotations.SelfIsNormalRequiredAcl
+      x-Controller@SelfIsActiveRequiredAcl:
+        class-name: com.xiaojukeji.dchat.interfaces.rest.api.acl.annotations.SelfIsActiveRequiredAcl
+      x-Controller@SelfBelongsToTeamRequiredAcl:
+        class-name: com.xiaojukeji.dchat.interfaces.rest.api.acl.annotations.SelfBelongsToTeamRequiredAcl
+      operationId: createSubChannel
+      parameters:
+        - name: data
+          description: 创建话题请求体
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/CreateSubChannelRequestBody'
+      responses:
+        200:
+          description: 结果
+          schema:
+            $ref: '#/definitions/CreateSubChannelResultVO'
+  /teams/{subdomain}/v1/sub_channels.join:
+    parameters:
+      - name: subdomain
+        description: 业务方
+        in: path
+        type: string
+        required: true
+    post:
+      tags:
+        - SubChannel
+      summary: 加入话题群
+      description: 根据话题群id加入话题群
+      x-Controller@SignInRequiredAcl:
+        class-name: com.xiaojukeji.dchat.interfaces.rest.api.acl.annotations.SignInRequiredAcl
+      x-Controller@SelfIsNormalRequiredAcl:
+        class-name: com.xiaojukeji.dchat.interfaces.rest.api.acl.annotations.SelfIsNormalRequiredAcl
+      x-Controller@SelfIsActiveRequiredAcl:
+        class-name: com.xiaojukeji.dchat.interfaces.rest.api.acl.annotations.SelfIsActiveRequiredAcl
+      x-Controller@SelfBelongsToTeamRequiredAcl:
+        class-name: com.xiaojukeji.dchat.interfaces.rest.api.acl.annotations.SelfBelongsToTeamRequiredAcl
+      operationId: joinSubChannel
+      parameters:
+        - name: data
+          description: 请求体
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/JoinSubChannelRequestBody'
+      responses:
+        200:
+          description: 结果
+          schema:
+            $ref: '#/definitions/JoinSubChannelResultVO'
+  /teams/{subdomain}/v1/sub_channels.leave:
+    parameters:
+      - name: subdomain
+        description: 业务方
+        in: path
+        type: string
+        required: true
+    post:
+      tags:
+        - SubChannel
+      summary: 离开话题群
+      description: 根据话题群id离开话题群
+      x-Controller@SignInRequiredAcl:
+        class-name: com.xiaojukeji.dchat.interfaces.rest.api.acl.annotations.SignInRequiredAcl
+      x-Controller@SelfIsNormalRequiredAcl:
+        class-name: com.xiaojukeji.dchat.interfaces.rest.api.acl.annotations.SelfIsNormalRequiredAcl
+      x-Controller@SelfIsActiveRequiredAcl:
+        class-name: com.xiaojukeji.dchat.interfaces.rest.api.acl.annotations.SelfIsActiveRequiredAcl
+      x-Controller@SelfBelongsToTeamRequiredAcl:
+        class-name: com.xiaojukeji.dchat.interfaces.rest.api.acl.annotations.SelfBelongsToTeamRequiredAcl
+      operationId: leaveSubChannel
+      parameters:
+        - name: data
+          description: 请求体
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/LeaveSubChannelRequestBody'
+      responses:
+        200:
+          description: 结果
+          schema:
+            $ref: '#/definitions/LeaveSubChannelResultVO'
+  /teams/{subdomain}/v1/sub_channels.update:
+    parameters:
+      - name: subdomain
+        description: 业务方
+        in: path
+        type: string
+        required: true
+    post:
+      tags:
+        - SubChannel
+      summary: 修改话题群信息
+      description: 根据请求体信息按需更新话题群信息
+      x-Controller@SignInRequiredAcl:
+        class-name: com.xiaojukeji.dchat.interfaces.rest.api.acl.annotations.SignInRequiredAcl
+      x-Controller@SelfIsNormalRequiredAcl:
+        class-name: com.xiaojukeji.dchat.interfaces.rest.api.acl.annotations.SelfIsNormalRequiredAcl
+      x-Controller@SelfIsActiveRequiredAcl:
+        class-name: com.xiaojukeji.dchat.interfaces.rest.api.acl.annotations.SelfIsActiveRequiredAcl
+      x-Controller@SelfBelongsToTeamRequiredAcl:
+        class-name: com.xiaojukeji.dchat.interfaces.rest.api.acl.annotations.SelfBelongsToTeamRequiredAcl
+      operationId: updateSubChannel
+      parameters:
+        - name: data
+          description: 请求体
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/UpdateSubChannelRequestBody'
+      responses:
+        200:
+          description: 结果
+          schema:
+            $ref: '#/definitions/UpdateSubChannelResultVO'
+
+# 定义 dto
+definitions:
+  # for 查询话题群
+  QuerySubChannelResultVO:
+    description: 话题群查询结果
+    type: object
+    properties:
+      has_more:
+        type: boolean
+        x-rename: hasMore
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/QueriedSubChannelVO'
+    required:
+      - has_more
+      - items
+  QueriedSubChannelVO:
+    description: 话题查询视图
+    type: object
+    x-rename-map:
+      latest_message: latestMessage
+    properties:
+      name:
+        type: string
+        description: 话题名称
+      sub_channel_id:
+        type: string
+        description: 话题群id
+        x-format: java.lang.Long
+      mention_all_count:
+        type: integer
+        x-rename: mentionAllCount
+      mention_me_count:
+        type: integer
+        x-rename: mentionMeCount
+      latest_message:
+        $ref: 'MessageModel.yaml/#/definitions/LatestMessageVO'
+
+  # for 更新话题群
+  UpdateSubChannelRequestBody:
+    description: 更新话题群请求体
+    type: object
+    properties:
+      sub_channel_id:
+        description: 话题群id
+        type: string
+        x-format: java.lang.Long
+        x-rename: subChannelId
+      name:
+        description: 话题名称, 根据场景按需传入
+        type: string
+    required:
+      - sub_channel_id
+  UpdateSubChannelResultVO:
+    description: 更新话题群请求结果
+    type: object
+    properties: { }
+  # for 退出话题群
+  LeaveSubChannelRequestBody:
+    description: 退出话题群请求体
+    type: object
+    properties:
+      sub_channel_id:
+        description: 话题群id
+        type: string
+        x-format: java.lang.Long
+        x-rename: subChannelId
+    required:
+      - sub_channel_id
+  LeaveSubChannelResultVO:
+    description: 退出话题群请求结果
+    type: object
+    properties: { }
+  # for 加入话题群
+  JoinSubChannelRequestBody:
+    description: 加入话题群请求体
+    type: object
+    properties:
+      sub_channel_id:
+        description: 话题群id
+        type: string
+        x-format: java.lang.Long
+        x-rename: subChannelId
+    required:
+      - sub_channel_id
+  JoinSubChannelResultVO:
+    description: 加入话题群请求结果
+    type: object
+    properties: { }
+  # for 创建话题群
+  CreateSubChannelRequestBody:
+    description: 创建话题请求体
+    type: object
+    properties:
+      msg_key:
+        description: 消息key
+        type: string
+        x-rename: msgKey
+      name:
+        description: 话题名
+        type: string
+    required:
+      - name
+      - msg_key
+  CreateSubChannelResultVO:
+    description: 创建话题结果
+    type: object
+    x-rename-map:
+      sub_channel: subChannel
+    properties:
+      vchannel:
+        $ref: 'VchannelModel.yaml#/definitions/PersonVchannelVO'
+      sub_channel:
+        $ref: '#/definitions/SubChannelVO'
+
+  SubChannelVO:
+    description: 话题视图
+    type: object
+    properties:
+      id:
+        type: string
+        x-format: java.lang.Long
+      vchannel_id:
+        type: string
+        x-format: java.lang.Long
+        x-rename: vchannelId
+      name:
+        type: string
+        description: 话题名称
+      is_member:
+        type: boolean
+        description: 是否话题群成员
+        x-rename: isMember
+      primary_vchannel_id:
+        type: string
+        x-rename: primaryVchannelId
+      attributes:
+        type: object
+        description: 话题属性
+        x-ClassName: Attributes
+        properties:
+          custom_label:
+            type: object
+            x-rename: customLabel
+            x-ClassName: CustomLabel
+            properties:
+              msg_key:
+                type: string
+                description: 创建话题的消息对应的key
+                x-rename: msgKey
+
+
+
+

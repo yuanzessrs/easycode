@@ -13,10 +13,12 @@ import com.easycode.codegen.api.core.resolver.ResolverContext;
 import com.easycode.codegen.api.core.util.AnnotationUtils;
 import com.easycode.codegen.api.core.util.SpringAnnotations;
 import com.easycode.codegen.api.core.util.SwaggerUtils;
+import com.easycode.codegen.utils.FormatUtils;
 import com.easycode.codegen.utils.Methods;
 import io.swagger.models.*;
 import io.swagger.models.parameters.*;
 import io.swagger.models.properties.ArrayProperty;
+import io.swagger.models.properties.ObjectProperty;
 import io.swagger.models.properties.Property;
 import io.swagger.models.properties.RefProperty;
 import lombok.SneakyThrows;
@@ -56,14 +58,16 @@ public class SwaggerResolver implements IResolver {
     public ApiResolveResult resolve() {
         File[] swaggerFiles = scanSwaggerFiles(context.getDefinitionFilesDirPath());
         List<ApiResolveResult> swaggerResolveResults = Arrays.stream(swaggerFiles)
-                .map(this::readFile)
-                .map(SwaggerUtils::parseSwagger)
+
+//                .map(this::readFile)
+//                .map(SwaggerUtils::parseSwagger)
+                .map(SwaggerUtils::toSwagger)
                 .map(this::resolveSwagger)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         // 检查重名dto
         checkDuplicatedNameController(swaggerResolveResults);
-        checkDuplicatedNameDto(swaggerResolveResults);
+//        checkDuplicatedNameDto(swaggerResolveResults);
         ApiResolveResult result = new ApiResolveResult();
         result.setClasses(
                 swaggerResolveResults.stream()
@@ -210,72 +214,85 @@ public class SwaggerResolver implements IResolver {
                         return null;
                     }
                     ModelImpl modelImpl = (ModelImpl) o.getValue();
-                    Map<String, String> renameMap = getRenameMap(modelImpl.getVendorExtensions());
-                    // 生成定义
-                    Dto dto = new Dto();
-                    dto.setName(getClassNameFromDefinitionName(definitionName));
-                    dto.setDescription(modelImpl.getDescription());
-                    // 默认注解
-                    dto.getAnnotations().add(AnnotationUtils.jsonInclude(), AnnotationUtils.jsonIgnore());
-                    // 自定义注解
-                    dto.getAnnotations().add(parseAnnotations(modelImpl.getVendorExtensions()));
-                    // 属性
-                    AtomicInteger index = new AtomicInteger();
-                    List<Field> preProcessedFields = Optional.ofNullable(modelImpl.getProperties())
-                            .orElse(Collections.emptyMap())
-                            .entrySet()
-                            .stream()
-                            .map(entry -> propertyConvertDtoField(entry.getKey(), entry.getValue()))
-                            .peek(field -> field.setIndex(index.incrementAndGet()))
-                            .collect(Collectors.toList());
-
-                    List<Field> finalFields = preProcessedFields.stream()
-                            .collect(Collectors.groupingBy(Field::getName))
-                            .entrySet()
-                            .stream()
-                            .map(entry -> {
-                                List<Field> multiFields = entry.getValue();
-                                if (multiFields.size() == 1) {
-                                    return multiFields.get(0);
-                                }
-                                String fieldName = entry.getKey();
-                                Field field = multiFields.stream().sorted(Field.COMPARATOR).collect(Collectors.toList())
-                                        .get(0);
-                                List<String> aliasValues = multiFields
-                                        .stream()
-                                        .flatMap(f -> Optional.ofNullable(f.getAliasValues()).map(List::stream)
-                                                .orElse(Stream.empty()))
-                                        .filter(f -> !ObjectUtils.isEmpty(f))
-                                        .filter(alias -> !fieldName.equals(alias))
-                                        .distinct()
-                                        .collect(Collectors.toList());
-                                field.setAliasValues(aliasValues);
-                                String aliasNamesJoinString = String.join("、", aliasValues);
-                                log.info("处理DTO，以下字段({})映射Java 字段相同，按照定义顺序，以第一个定义详情为准", aliasNamesJoinString);
-                                return field;
-                            })
-                            .peek(field -> {
-                                if (ObjectUtils.isEmpty(field.getAliasValues())) {
-                                    Optional.ofNullable(renameMap.get(field.getName())).ifPresent(alias -> {
-                                        field.setAliasValues(Collections.singletonList(field.getName()));
-                                        field.setName(alias);
-                                    });
-                                }
-                            })
-                            .peek(field -> {
-                                List<String> aliasValues = field.getAliasValues();
-                                if (!ObjectUtils.isEmpty(aliasValues)) {
-                                    field.getAnnotations().add(AnnotationUtils.jacksonPropertyOrAlias(aliasValues));
-                                }
-                            })
-                            .sorted(Field.COMPARATOR)
-                            .collect(Collectors.toList());
-
-                    dto.setFields(finalFields);
-                    return dto;
+                    return toDto(definitionName, modelImpl);
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+    }
+
+
+    private Dto toDto(String definitionName, ModelImpl modelImpl) {
+        return toDto(definitionName, modelImpl.getDescription(), modelImpl.getProperties(), modelImpl.getVendorExtensions());
+    }
+
+    private Dto toDto(String definitionName, ObjectProperty objectProperty) {
+        return toDto(definitionName, objectProperty.getDescription(), objectProperty.getProperties(), objectProperty.getVendorExtensions());
+    }
+
+    private Dto toDto(String definitionName, String description, Map<String, Property> properties, Map<String, Object> vendorExtensions) {
+        Map<String, String> renameMap = getRenameMap(vendorExtensions);
+        // 生成定义
+        Dto dto = new Dto();
+        dto.setName(getClassNameFromDefinitionName(definitionName));
+        dto.setDescription(description);
+        // 默认注解
+        dto.getAnnotations().add(AnnotationUtils.jsonInclude(), AnnotationUtils.jsonIgnore());
+        // 自定义注解
+        dto.getAnnotations().add(parseAnnotations(vendorExtensions));
+        // 属性
+        AtomicInteger index = new AtomicInteger();
+        List<Field> preProcessedFields = Optional.ofNullable(properties)
+                .orElse(Collections.emptyMap())
+                .entrySet()
+                .stream()
+                .map(entry -> toDtoField(entry.getKey(), entry.getValue()))
+                .peek(field -> field.setIndex(index.incrementAndGet()))
+                .collect(Collectors.toList());
+
+        List<Field> finalFields = preProcessedFields.stream()
+                .collect(Collectors.groupingBy(Field::getName))
+                .entrySet()
+                .stream()
+                .map(entry -> {
+                    List<Field> multiFields = entry.getValue();
+                    if (multiFields.size() == 1) {
+                        return multiFields.get(0);
+                    }
+                    String fieldName = entry.getKey();
+                    Field field = multiFields.stream().sorted(Field.COMPARATOR).collect(Collectors.toList())
+                            .get(0);
+                    List<String> aliasValues = multiFields
+                            .stream()
+                            .flatMap(f -> Optional.ofNullable(f.getAliasValues()).map(List::stream)
+                                    .orElse(Stream.empty()))
+                            .filter(f -> !ObjectUtils.isEmpty(f))
+                            .filter(alias -> !fieldName.equals(alias))
+                            .distinct()
+                            .collect(Collectors.toList());
+                    field.setAliasValues(aliasValues);
+                    String aliasNamesJoinString = String.join("、", aliasValues);
+                    log.info("处理DTO，以下字段({})映射Java 字段相同，按照定义顺序，以第一个定义详情为准", aliasNamesJoinString);
+                    return field;
+                })
+                .peek(field -> {
+                    if (ObjectUtils.isEmpty(field.getAliasValues())) {
+                        Optional.ofNullable(renameMap.get(field.getName())).ifPresent(alias -> {
+                            field.setAliasValues(Collections.singletonList(field.getName()));
+                            field.setName(alias);
+                        });
+                    }
+                })
+                .peek(field -> {
+                    List<String> aliasValues = field.getAliasValues();
+                    if (!ObjectUtils.isEmpty(aliasValues)) {
+                        field.getAnnotations().add(AnnotationUtils.jacksonPropertyOrAlias(aliasValues));
+                    }
+                })
+                .sorted(Field.COMPARATOR)
+                .collect(Collectors.toList());
+
+        dto.setFields(finalFields);
+        return dto;
     }
 
     /**
@@ -285,7 +302,7 @@ public class SwaggerResolver implements IResolver {
      * @param property  属性实体
      * @return dto field 对象
      */
-    private Field propertyConvertDtoField(String fieldName, Property property) {
+    private Field toDtoField(String fieldName, Property property) {
         Field field = new Field();
         field.setName(fieldName);
         field.setDescription(property.getDescription());
@@ -309,9 +326,20 @@ public class SwaggerResolver implements IResolver {
         if (property.getRequired()) {
             field.getAnnotations().add(AnnotationUtils.notNull());
         }
-        if (property instanceof ArrayProperty) {
+
+        if (hasXFormat(property.getVendorExtensions())) {
+            String xFormat = getXFormat(property.getVendorExtensions());
+            // x-Type: xx ,则对应 xx
+            String[] xFormatArr = xFormat.split("\\.");
+            String type = xFormatArr[xFormatArr.length - 1];
+            field.setType(type);
+            if (xFormatArr.length > 1) {
+                field.getImports().add(xFormat);
+            }
+            field.getAnnotations().add(AnnotationUtils.valid());
+        } else if (property instanceof ArrayProperty) {
             // array 暂不支持默认值
-            Field childField = propertyConvertDtoField("childField", ((ArrayProperty) property).getItems());
+            Field childField = toDtoField("childField", ((ArrayProperty) property).getItems());
             field.setType(String.format("%s<%s>", List.class.getSimpleName(), childField.getType()));
             field.getImports().add(List.class.getName());
             field.getImports().add(childField.getImports().get());
@@ -321,20 +349,16 @@ public class SwaggerResolver implements IResolver {
             String className = getClassNameFromRefPath(refProperty.getOriginalRef());
             field.setType(className);
             field.getAnnotations().add(AnnotationUtils.valid());
-        } else if (SwaggerConstants.TYPE_OBJECT.equalsIgnoreCase(property.getType())
-                || hasXFormat(property.getVendorExtensions())) {
-            String xFormat = getXFormat(property.getVendorExtensions());
-            if (ObjectUtils.isEmpty(xFormat)) {
-                // 没有配置 x-Type,则对应 java.lang.Object
+        } else if (property instanceof ObjectProperty) {
+            ObjectProperty objectProperty = (ObjectProperty) property;
+            if (ObjectUtils.isEmpty(objectProperty.getProperties())) {
+                // 没有设置属性, 则对应 java.lang.Object
                 field.setType(Object.class.getSimpleName());
             } else {
-                // x-Type: xx ,则对应 xx
-                String[] xFormatArr = xFormat.split("\\.");
-                String type = xFormatArr[xFormatArr.length - 1];
-                field.setType(type);
-                if (xFormatArr.length > 1) {
-                    field.getImports().add(xFormat);
-                }
+                // 有属性，则需要生成类中类
+                String innerClassName = FormatUtils.snakeToUpperCamel(fieldName);
+                field.setDto(toDto(innerClassName, objectProperty));
+                field.setType(innerClassName);
             }
             field.getAnnotations().add(AnnotationUtils.valid());
         } else {

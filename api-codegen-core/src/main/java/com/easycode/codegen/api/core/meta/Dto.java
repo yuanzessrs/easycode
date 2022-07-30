@@ -2,13 +2,15 @@ package com.easycode.codegen.api.core.meta;
 
 import com.easycode.codegen.api.core.holders.DataHolder;
 import com.easycode.codegen.utils.FormatUtils;
+import lombok.Data;
+import org.springframework.util.ObjectUtils;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
-import lombok.Data;
-import org.springframework.util.ObjectUtils;
 
 /**
  * @ClassName: Dto
@@ -46,10 +48,20 @@ public class Dto implements Importable {
         return externalImports.stream().distinct().collect(Collectors.toList());
     }
 
+    public List<Dto> getInnerDtos() {
+        return fields.stream()
+                .sorted(Comparator.comparing(Field::getIndex))
+                .map(Field::getDto)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
     @Data
     public static class Field {
 
         public static final Comparator<Field> COMPARATOR = Comparator.comparing(Field::getIndex);
+
+        private Dto dto;
 
         private String type;
 

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.xiaojukeji.dchat</groupId>
+    <artifactId>snitch</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <properties>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+    </properties>
+
+    <build>
+        <!--项目源码目录，当构建项目的时候，构建系统会编译目录里的源码。该路径是相对于pom.xml的相对路径。 -->
+<!--        <sourceDirectory>${basedir}\src\main\java</sourceDirectory>-->
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <id>add-resource</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>add-resource</goal>
+                        </goals>
+                        <configuration>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/src/test/resources/projects/demo/src/main/resources/api</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.easycode</groupId>
+                <artifactId>maven-plugin-api-codegen</artifactId>
+                <version>1.0-SNAPSHOT</version>
+                <configuration>
+                    <config>
+                        <apiDefineDirPath>${basedir}/src/test/resources/projects/demo/src/main/resources/api</apiDefineDirPath>
+                        <basePackage>com.xiaojukeji.dchat.interfaces.rest.api</basePackage>
+                        <plugins>
+                            <dtoStringFieldChecker>
+                                <field>
+                                    admin_id、application_ids、channel_id、channel_ids、combine_id、session_channel_id、session_channel_ids、channel_msg_id、file_id、id、msg_id、msg_ids、message_id、comments_ids、robot_id、target_id、team_id、uid、uids、vchannel_id、vchannelId、vchannel_seq、target_vchannel_id、vcids、star_id、owner_id、user_id、member_uids、integration_id、department_id、parent_id、children_ids、next_id、target_uid、pin_id、receiver_uid、creator_uid、inviter_uid
+                                </field>
+                                <filterByAnnotations>
+                                    <item>
+                                        <name>JsonSerialize</name>
+                                        <properties>
+                                            <item>
+                                                <key>using</key>
+                                                <value>ToStringSerializer.class</value>
+                                            </item>
+                                        </properties>
+                                    </item>
+                                </filterByAnnotations>
+                            </dtoStringFieldChecker>
+                        </plugins>
+                        <custom>
+                            <dto>
+                                <toString>
+                                    <lombok>
+
+                                    </lombok>
+                                </toString>
+                            </dto>
+                        </custom>
+                    </config>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>ApiCodegenMojo</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

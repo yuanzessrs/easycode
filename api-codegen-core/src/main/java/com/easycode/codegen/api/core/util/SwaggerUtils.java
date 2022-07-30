@@ -6,7 +6,20 @@ import com.easycode.codegen.utils.FormatUtils;
 import io.swagger.models.Swagger;
 import io.swagger.models.properties.Property;
 import io.swagger.parser.SwaggerParser;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.parser.OpenAPIV3Parser;
+import io.swagger.v3.parser.core.models.ParseOptions;
+import lombok.SneakyThrows;
+import org.apache.commons.io.FileUtils;
+
+import java.io.File;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+
+import static com.easycode.codegen.api.core.util.SwaggerVendorExtensions.getXDefault;
 
 /**
  * @ClassName: SwaggerUtils
@@ -15,6 +28,35 @@ import java.util.Optional;
  * @Date: 2021-04-19 18:34
  */
 public class SwaggerUtils {
+
+
+    public static OpenAPI toOpenAPI(File file) {
+        ParseOptions parseOptions = new ParseOptions();
+        parseOptions.setResolve(true); // implicit
+//        parseOptions.setResolveFully(true);
+        return new OpenAPIV3Parser().read(file.getAbsolutePath(), null, parseOptions);
+    }
+
+    public static Swagger toSwagger(File file) {
+        io.swagger.parser.util.ParseOptions parseOptions = new io.swagger.parser.util.ParseOptions();
+        parseOptions.setResolve(true); // implicit
+        return new SwaggerParser().read(file.getAbsolutePath(), null, parseOptions);
+    }
+
+    /**
+     * 扫描swagger文件
+     *
+     * @param swaggerApiDirPath swagger文件目录
+     * @return swagger files
+     */
+    @SneakyThrows
+    public static List<File> scan(String swaggerApiDirPath) {
+        File apiResourceDir = new File(swaggerApiDirPath);
+        FileUtils.forceMkdir(apiResourceDir);
+        File[] swaggerFiles = apiResourceDir.listFiles((file, name) -> name.endsWith(".yaml") || name.endsWith(".yml"));
+        Objects.requireNonNull(swaggerFiles, "没有找到swagger定义文档");
+        return Arrays.asList(swaggerFiles);
+    }
 
     public static Swagger parseSwagger(String content) {
         return new SwaggerParser().parse(content);
@@ -54,6 +96,12 @@ public class SwaggerUtils {
         return Optional.ofNullable(ClassUtils.getValue(property, SwaggerConstants.DEFAULT_VALUE_FIELD))
                 .map(Object::toString)
                 .orElse(null);
+    }
+
+    public static String getPropertyDefaultValue(Schema<?> property) {
+        return Optional.ofNullable(ClassUtils.getValue(property, SwaggerConstants.DEFAULT_VALUE_FIELD))
+                .map(Object::toString)
+                .orElseGet(() -> getXDefault(property.getExtensions()));
     }
 
 }

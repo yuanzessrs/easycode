@@ -52,42 +52,38 @@ public class HandlerClass implements HandlerImportable {
     private final DataHolder<AnnotationDefinition> serviceAnnotations = new DataHolder<>();
 
     protected List<String> commonImports() {
-        List<String> commonImports = new ArrayList<>(imports.get());
-        annotations.get().forEach(annotation -> commonImports.addAll(annotation.getImports().get()));
+        List<String> imports = new ArrayList<>(this.imports.get());
+        annotations.get().forEach(annotation -> imports.addAll(annotation.getImports().get()));
 
-        handlerMethods.forEach(handlerMethod -> commonImports.addAll(handlerMethod.commonImports()));
-        return commonImports;
+        handlerMethods.forEach(handlerMethod -> imports.addAll(handlerMethod.commonImports()));
+        return imports;
     }
 
     @Override
     public List<String> getOutputControllerImports() {
-        List<String> outputControllerImports = new ArrayList<>(commonImports());
-        controllerAnnotations.get()
-                .forEach(annotation -> outputControllerImports.addAll(annotation.getImports().get()));
+        List<String> imports = new ArrayList<>(commonImports());
+        controllerAnnotations.get().forEach(annotation -> imports.addAll(annotation.getImports().get()));
 
-        handlerMethods
-                .forEach(handlerMethod -> outputControllerImports.addAll(handlerMethod.getOutputControllerImports()));
-        return outputControllerImports;
+        handlerMethods.forEach(handlerMethod -> imports.addAll(handlerMethod.getOutputControllerImports()));
+        return imports;
     }
 
     @Override
     public List<String> getOutputFeignClientImports() {
-        List<String> outputFeignClientImports = new ArrayList<>(commonImports());
-        feignClientAnnotations.get()
-                .forEach(annotation -> outputFeignClientImports.addAll(annotation.getImports().get()));
+        List<String> imports = new ArrayList<>(commonImports());
+        feignClientAnnotations.get().forEach(annotation -> imports.addAll(annotation.getImports().get()));
 
-        handlerMethods
-                .forEach(handlerMethod -> outputFeignClientImports.addAll(handlerMethod.getOutputFeignClientImports()));
-        return outputFeignClientImports;
+        handlerMethods.forEach(handlerMethod -> imports.addAll(handlerMethod.getOutputFeignClientImports()));
+        return imports;
     }
 
     @Override
     public List<String> getOutputServiceImports() {
-        List<String> outputServiceImports = new ArrayList<>(commonImports());
-        serviceAnnotations.get().forEach(annotation -> outputServiceImports.addAll(annotation.getImports().get()));
+        List<String> imports = new ArrayList<>(commonImports());
+        serviceAnnotations.get().forEach(annotation -> imports.addAll(annotation.getImports().get()));
 
-        handlerMethods.forEach(handlerMethod -> outputServiceImports.addAll(handlerMethod.getOutputServiceImports()));
-        return outputServiceImports;
+        handlerMethods.forEach(handlerMethod -> imports.addAll(handlerMethod.getOutputServiceImports()));
+        return imports;
     }
 
 }

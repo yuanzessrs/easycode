@@ -1,0 +1,175 @@
+swagger: "2.0"
+info:
+  version: 1.0.0
+  title: Vchannel相关模型定义
+paths: { }
+# 定义 dto
+definitions:
+  PersonVchannelVO:
+    description: 会话
+    type: object
+    x-rename-map:
+      latest_message: latestMessage
+    properties:
+      vchannel_id:
+        type: string
+        x-vo: true
+        x-rename: vchannelId
+      type:
+        type: string
+        x-tips: lowerCase
+        x-vo: true
+        description: p2p、channel、p2bot、user、official、secret、extchannel、extp2p
+      latest_ts:
+        type: integer
+        format: int64
+        x-rename: latestTs
+        x-vo: true
+      latest_message:
+        x-vo: true
+        $ref: 'MessageModel.yaml/#/definitions/LatestMessageVO'
+      unread_count:
+        type: integer
+        x-rename: unreadCount
+        x-vo: true
+      mention_all_count:
+        type: integer
+        x-vo: true
+        x-rename: mentionAllCount
+      mention_me_count:
+        type: integer
+        x-vo: true
+        x-rename: mentionMeCount
+      oldest_unread_mention_key:
+        type: string
+        x-vo: true
+        x-rename: oldestUnreadMentionKey
+      oldest_unread_message_key:
+        type: string
+        x-vo: true
+        x-rename: oldestUnreadMessageKey
+      #      opposite_uid:
+      #        type: string
+      #        description: 仅p2p会话存在该字段
+      #        x-rename: oppositeUid
+      opposite_read_ts:
+        type: integer
+        format: int64
+        x-vo: true
+        description: 仅p2p会话存在该字段, 可选字段(exclude-optional)
+        x-rename: oppositeReadTs
+
+      ### snitch/modules/virtual_channel/v2/single_presenter.clj:231
+      # snitch.modules.virtual-channel.v2.legacy/wrap-read-later |  add read_later
+      read_later:
+        type: boolean
+        x-vo: true
+        x-rename: readLater
+
+      # snitch.modules.virtual-channel.v2.legacy/wrap-hide | add hide_ts
+      hide_ts:
+        type: integer
+        format: int64
+        x-vo: true
+        description: 可选字段(exclude-optional)
+        x-rename: hideTs
+      # snitch.modules.virtual-channel.v2.legacy/wrap-pin | add is_pinned
+      is_pinned:
+        type: boolean
+        x-rename: isPinned
+        x-vo: true
+      # snitch.modules.virtual-channel.v2.legacy/wrap-category |add category attributes
+      category:
+        type: string
+        x-vo: true
+      attributes:
+        type: object
+        x-format: Map<String,Object>
+        x-import: java.util.Map
+        x-vo: true
+        x-clojure-ref: vchannel-preference-attributes snitch.modules.virtual-channel.v2.legacy/wrap-category
+        description: 略，参照之前的定义
+      # snitch.modules.virtual-channel.v2.legacy/wrap-preference | add preference
+      #  待确认 todo
+      preference:
+        description: 可选字段(exclude-optional)
+        $ref: '#/definitions/VchannelPreferenceVO'
+        x-vo: true
+      # add property from vchannel-server
+      team_id:
+        type: string
+        x-vo: true
+      name:
+        type: string
+        x-vo: true
+        description: 来自具体形态的name
+      avatar_url:
+        type: string
+        description: 来自具体形态
+        x-vo: true
+        x-rename: avatarUrl
+      created_at:
+        type: string
+        x-vo: true
+        x-tips: yyyy-MM-dd'T'HH:mm:ss.SSSZ
+        description: 来自具体形态
+      updated_at:
+        type: string
+        x-vo: true
+        x-tips: yyyy-MM-dd'T'HH:mm:ss.SSSZ
+        description: 来自具体形态
+        x-rename: updatedAt
+      id:
+        type: string
+        x-vo: true
+        x-tips: from vchannel_id
+
+      # only user vchannel ?
+      block_status:
+        type: string
+        x-vo: true
+
+  #      name_en:
+  #        type: string
+  #        x-rename: nameEn
+
+  VchannelPreferenceVO:
+    description: 会话偏好
+    type: object
+    x-clojure-ref: snitch.modules.virtual-channel.v2.legacy/wrap-preferencesnitch.modules.virtual-channel.v2.legacy/wrap-preference
+    x-rename-map:
+      open_method: openMethod
+    properties:
+      notification:
+        description: all、mention、never、mention-all
+        type: string
+      notification-v2:
+        x-rename: notificationV2
+        type: string
+      open_method:
+        x-rename: openMethod
+        description: unknown
+        type: object
+        properties:
+          type:
+            type: string
+          pc_url:
+            type: string
+            x-rename: pcUrl
+          app_url:
+            type: string
+            x-renmae: appUrl
+      interactable:
+        type: boolean
+      auto_translation:
+        type: boolean
+        x-rename: autoTranslation
+      uniq_name:
+        type: string
+        x-rename: uniqName
+      author_hidden:
+        type: boolean
+        description: 消息的展示是否隐藏头像，根据后端配置决定某些功能号滴滴号是否需要隐藏
+        x-rename: authorHidden
+
+

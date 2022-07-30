@@ -1,0 +1,239 @@
+swagger: "2.0"
+info:
+  version: 1.0.0
+  title: 用户相关接口
+tags:
+  - name: User
+    description: 用户相关接口
+schemes:
+  - http
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /teams/{subdomain}/user.work_status:
+    parameters:
+      - name: subdomain
+        description: 业务方
+        in: path
+        type: string
+        required: true
+    post:
+      tags:
+        - User
+      summary: 修改工作状态
+      description: 修改工作状态
+      x-Controller@SelfIsActiveRequiredAcl:
+        class-name: com.xiaojukeji.dchat.interfaces.rest.api.acl.annotations.SelfIsActiveRequiredAcl
+      x-Controller@SignInRequiredAcl:
+        class-name: com.xiaojukeji.dchat.interfaces.rest.api.acl.annotations.SignInRequiredAcl
+      operationId: setUserWorkStatus
+      parameters:
+        - name: data
+          description: 工作状态最新数据
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/WorkStatusUpdateRequestBody'
+      responses:
+        200:
+          description: 结果
+          schema:
+            $ref: '#/definitions/UserInfoDetailVO'
+
+# 定义 dto
+definitions:
+  WorkStatusUpdateRequestBody:
+    description: 修改工作状态请求体
+    type: object
+    x-rename-map:
+      expired_ts: expiredTs
+    properties:
+      emoji:
+        type: string
+        description: 表情标识
+      text:
+        type: string
+        description: 状态描述
+      status:
+        type: string
+        description: 状态ID(枚举）{"CUSTOM" "SICK" "ON_TRIP" "AT_MEETING" "ON_LEAVE" "ON_THE_WAY" "HOME_OFFICE"}
+      mode:
+        type: string
+        description: 状态模式(枚举）{"CUSTOM" "ACTIVE" "BUSY" "AWAY"}
+      expired_ts:
+        type: integer
+        format: int64
+        description: 过期时间（10位时间戳，秒级）
+    required:
+      - status
+      - mode
+  UserInfoDetailVO:
+    description: 用户详情
+    type: object
+    x-rename-map:
+      wearing_medal: wearingMedal
+      work_status: workStatus
+      team_id: teamId
+      english_name: englishName
+      last_modified: lastModified
+      user_flag: userFlag
+      is_frozen: isFrozen
+    properties:
+      avatarUrl:
+        description: 头像
+        type: string
+      departmentInfo:
+        description: 部门信息
+        type: array
+        items:
+          $ref: '#/definitions/UserDepartment'
+      departmentStatus:
+        description: 部门状态
+        type: integer
+      deptId:
+        description: 部门id
+        type: string
+      email:
+        description: 邮箱
+        type: string
+      empNum:
+        description: 员工编号
+        type: string
+      empStatus:
+        description: 员工状态
+        type: integer
+      empStatusDesc:
+        description: 员工状态描述
+        type: string
+      english_name:
+        description: 英文名
+        type: string
+      fullname:
+        description: 全名
+        type: string
+      id:
+        description: uid
+        type: string
+      isManager:
+        description: 是否管理者
+        type: boolean
+      job:
+        description: 职位
+        type: string
+      last_modified:
+        description: 最后编辑时间(13位时间戳，毫秒级)
+        type: integer
+        format: int64
+      location:
+        description: 所在地
+        $ref: '#/definitions/UserLocation'
+      managerFullname:
+        type: string
+        description: 管理者全名
+      managerMail:
+        type: string
+        description: 管理者邮箱
+      managerName:
+        type: string
+      name:
+        type: string
+      nickname:
+        type: string
+        description: 昵称
+      realname:
+        type: string
+      team_id:
+        type: string
+      mobile:
+        type: string
+      user_flag:
+        type: string
+      wearing_medal:
+        description: 佩戴勋章
+        $ref: '#/definitions/WearingMedal'
+      work_status:
+        description: 工作状态
+        $ref: '#/definitions/UserWorkStatus'
+      is_frozen:
+        type: boolean
+
+
+  WearingMedal:
+    description: 勋章
+    type: object
+    properties:
+      medalIcon:
+        type: string
+      medalName:
+        type: string
+      medalUrl:
+        type: string
+      wearFlag:
+        type: integer
+
+  UserWorkStatus:
+    description: 工作状态
+    type: object
+    x-rename-map:
+      expired_ts: expiredTs
+    properties:
+      emoji:
+        type: string
+        description: 表情标识
+      text:
+        type: string
+        description: 状态描述
+      status:
+        type: string
+        description: 状态ID(枚举）{"CUSTOM" "SICK" "ON_TRIP" "AT_MEETING" "ON_LEAVE" "ON_THE_WAY" "HOME_OFFICE"}
+      mode:
+        type: string
+        description: 状态模式(枚举）{"CUSTOM" "ACTIVE" "BUSY" "AWAY"}
+      expired_ts:
+        type: integer
+        format: int64
+        description: 过期时间（10位时间戳，秒级）
+    required:
+      - status
+      - mode
+
+
+
+  UserLocation:
+    description: 用户所在地
+    type: object
+    properties:
+      building:
+        type: string
+      city:
+        type: string
+        description: 城市
+      country:
+        type: string
+        description: 国家
+      station:
+        type: string
+
+
+
+
+  UserDepartment:
+    description: 用户部门信息
+    type: object
+    properties:
+      id:
+        description: id
+        type: string
+      deptId:
+        description: 部门id
+        type: string
+      name:
+        type: string
+        description: 部门名称
+
+
+
+
+
