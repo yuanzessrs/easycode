@@ -88,18 +88,6 @@ public class HandlerMethod implements HandlerImportable {
         return consumes.stream().anyMatch(o -> o.contains("json"));
     }
 
-    public List<String> getExternalImports() {
-        List<String> externalImports = new ArrayList<>(imports.get());
-        handlerMethodParams.forEach(param -> param.getControllerAnnotations().get()
-                .forEach(annotation -> externalImports.addAll(annotation.getImports().get())));
-        controllerAnnotations.get().forEach(annotation -> externalImports.addAll(annotation.getImports().get()));
-
-        externalImports.addAll(handlerMethodReturn.getImports().get());
-        annotations.get().forEach(annotation -> externalImports.addAll(annotation.getImports().get()));
-
-        return externalImports.stream().distinct().collect(Collectors.toList());
-    }
-
     protected List<String> commonImports() {
         List<String> commonImports = new ArrayList<>(imports.get());
         annotations.get().forEach(annotation -> commonImports.addAll(annotation.getImports().get()));

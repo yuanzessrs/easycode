@@ -23,6 +23,7 @@ public class ${definition.name} {
 #end
     private#if($field.readOnly) final#end ${field.type} ${field.name}$field.value();
 #end
+#if(!$field.hasBuidler)
 #foreach($field in $definition.fields)
 
     public ${field.type} get${field.upperCamelCaseName()}() {
@@ -34,6 +35,7 @@ public class ${definition.name} {
         this.${field.name} = ${field.name};
     }
 #end#end
+#end
 #if(${definition.overrideToString})
     ${definition.overrideToString}
 #end
@@ -47,7 +49,7 @@ public class ${definition.name} {
 #foreach($annotation in $definition.getAnnotations().getDescSorted())
     ${annotation.toString()}
 #end
-    public class ${definition.name} {
+    public static class ${definition.name} {
         #foreach($field in $definition.fields)
 
         /**
@@ -58,6 +60,7 @@ public class ${definition.name} {
 #end
         private#if($field.readOnly) final#end ${field.type} ${field.name}$field.value();
         #end
+#if(!$field.hasBuidler)
         #foreach($field in $definition.fields)
 
         public ${field.type} get${field.upperCamelCaseName()}() {
@@ -69,6 +72,7 @@ public class ${definition.name} {
         this.${field.name} = ${field.name};
         }
     #end#end
+#end
 #foreach($definition in $definition.getInnerDtos())
 
         /**
@@ -79,7 +83,7 @@ public class ${definition.name} {
 #foreach($annotation in $definition.getAnnotations().getDescSorted())
         ${annotation.toString()}
 #end
-        public class ${definition.name} {
+        public static class ${definition.name} {
             #foreach($field in $definition.fields)
 
             /**
@@ -90,6 +94,7 @@ public class ${definition.name} {
 #end
             private#if($field.readOnly) final#end ${field.type} ${field.name}$field.value();
             #end
+#if(!$field.hasBuidler)
             #foreach($field in $definition.fields)
 
             public ${field.type} get${field.upperCamelCaseName()}() {
@@ -101,6 +106,7 @@ public class ${definition.name} {
                 this.${field.name} = ${field.name};
             }
             #end#end
+#end
 
         }
 #end

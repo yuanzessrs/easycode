@@ -14,14 +14,35 @@ import java.util.Map;
 @Data
 public class CustomConfig {
 
-    private Map<String, String> classMappings;
+    private AutoImport autoImport;
 
     private DTO dto;
+
+    @Data
+    public static class AutoImport {
+
+        private Map<String, String> mappings;
+
+    }
 
     @Data
     public static class DTO {
 
         private ToString toString;
+
+        private Builder builder;
+
+    }
+
+    @Data
+    public static class Builder {
+
+        private Lombok lombok;
+
+        @Data
+        public static class Lombok {
+
+        }
 
     }
 

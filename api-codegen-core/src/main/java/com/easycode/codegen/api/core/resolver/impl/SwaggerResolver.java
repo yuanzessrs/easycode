@@ -13,6 +13,7 @@ import com.easycode.codegen.api.core.resolver.ResolverContext;
 import com.easycode.codegen.api.core.util.AnnotationUtils;
 import com.easycode.codegen.api.core.util.SpringAnnotations;
 import com.easycode.codegen.api.core.util.SwaggerUtils;
+import com.easycode.codegen.api.core.util.SwaggerVendorExtensions;
 import com.easycode.codegen.utils.FormatUtils;
 import com.easycode.codegen.utils.Methods;
 import io.swagger.models.*;
@@ -57,10 +58,8 @@ public class SwaggerResolver implements IResolver {
 
     public ApiResolveResult resolve() {
         File[] swaggerFiles = scanSwaggerFiles(context.getDefinitionFilesDirPath());
-        List<ApiResolveResult> swaggerResolveResults = Arrays.stream(swaggerFiles)
-
-//                .map(this::readFile)
-//                .map(SwaggerUtils::parseSwagger)
+        List<ApiResolveResult> swaggerResolveResults = Arrays
+                .stream(swaggerFiles)
                 .map(SwaggerUtils::toSwagger)
                 .map(this::resolveSwagger)
                 .filter(Objects::nonNull)
@@ -84,7 +83,7 @@ public class SwaggerResolver implements IResolver {
 
     private ApiResolveResult resolveSwagger(Swagger swagger) {
         // 关闭的swagger文档不处理
-        if ("true".equalsIgnoreCase(getXFieldVal(swagger.getVendorExtensions(), "disabled"))) {
+        if (SwaggerVendorExtensions.isIgnore(swagger.getVendorExtensions())) {
             // log
             return null;
         }
@@ -230,6 +229,9 @@ public class SwaggerResolver implements IResolver {
     }
 
     private Dto toDto(String definitionName, String description, Map<String, Property> properties, Map<String, Object> vendorExtensions) {
+        if (SwaggerVendorExtensions.isIgnore(vendorExtensions)) {
+            return null;
+        }
         Map<String, String> renameMap = getRenameMap(vendorExtensions);
         // 生成定义
         Dto dto = new Dto();
@@ -239,6 +241,7 @@ public class SwaggerResolver implements IResolver {
         dto.getAnnotations().add(AnnotationUtils.jsonInclude(), AnnotationUtils.jsonIgnore());
         // 自定义注解
         dto.getAnnotations().add(parseAnnotations(vendorExtensions));
+        dto.getImports().add(SwaggerVendorExtensions.getImports(vendorExtensions));
         // 属性
         AtomicInteger index = new AtomicInteger();
         List<Field> preProcessedFields = Optional.ofNullable(properties)

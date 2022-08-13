@@ -55,6 +55,11 @@ public class SwaggerVendorExtensions {
         return getXFieldVal(vendorExtensions, "rename");
     }
 
+    public static boolean isIgnore(Map<String, Object> vendorExtensions) {
+        return "true".equalsIgnoreCase(getXFieldVal(vendorExtensions, "ignore"))
+                || "true".equalsIgnoreCase(getXFieldVal(vendorExtensions, "disabled"));
+    }
+
     public static List<String> getImports(Map<String, Object> vendorExtensions) {
         Object it = vendorExtensions.get("x-import");
         if (ObjectUtils.isEmpty(it)) {

@@ -17,6 +17,20 @@ import org.springframework.util.CollectionUtils;
  */
 public class AnnotationUtils {
 
+    public static AnnotationDefinition lombokBuilder() {
+        AnnotationDefinition annotation = new AnnotationDefinition();
+        annotation.setAnnotationName("Builder");
+        annotation.getImports().add("lombok.Builder");
+        return annotation;
+    }
+
+    public static AnnotationDefinition lombokGetter() {
+        AnnotationDefinition annotation = new AnnotationDefinition();
+        annotation.setAnnotationName("Getter");
+        annotation.getImports().add("lombok.Getter");
+        return annotation;
+    }
+
     public static AnnotationDefinition lombokToString() {
         AnnotationDefinition annotation = new AnnotationDefinition();
         annotation.setAnnotationName("ToString");

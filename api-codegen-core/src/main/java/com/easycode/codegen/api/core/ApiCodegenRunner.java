@@ -8,7 +8,9 @@ import com.easycode.codegen.api.core.config.PathWrapper;
 import com.easycode.codegen.api.core.config.PluginConfig;
 import com.easycode.codegen.api.core.config.plugin.DtoStringFieldCheckPlugin.FilterAnnotation;
 import com.easycode.codegen.api.core.enums.GenerateType;
+import com.easycode.codegen.api.core.meta.AnnotationDefinition;
 import com.easycode.codegen.api.core.meta.ApiResolveResult;
+import com.easycode.codegen.api.core.meta.Dto;
 import com.easycode.codegen.api.core.meta.Dto.Field;
 import com.easycode.codegen.api.core.meta.HandlerMethod;
 import com.easycode.codegen.api.core.meta.HandlerMethod.Return;
@@ -17,19 +19,14 @@ import com.easycode.codegen.api.core.resolver.impl.SwaggerResolver;
 import com.easycode.codegen.api.core.util.AnnotationUtils;
 import com.easycode.codegen.utils.EnumUtils;
 import com.easycode.codegen.utils.VelocityUtils;
-import java.io.File;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
+
+import java.io.File;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * @ClassName: ApiCodegenRunner
@@ -52,6 +49,7 @@ public class ApiCodegenRunner {
         ApiResolveResult apiResolveResult = (new SwaggerResolver(context)).resolve();
         this.customDto(apiResolveResult, config);
         this.checkDtoStringField(apiResolveResult, config);
+        this.processAutoImport(apiResolveResult, config);
         switch (EnumUtils.getEnum(GenerateType.class, config.getGenerateType().toLowerCase())) {
             case SPRING_MVC:
                 this.generateControllerFile(config, apiResolveResult);
@@ -63,6 +61,47 @@ public class ApiCodegenRunner {
                 this.generateDtoFile(config, apiResolveResult);
         }
 
+    }
+
+    private void processAutoImport(ApiResolveResult apiResolveResult, GlobalConfig config) {
+        Optional.ofNullable(config.getCustom()).map(CustomConfig::getAutoImport).ifPresent(autoImport -> {
+            Map<String, String> mappings = Optional.ofNullable(autoImport.getMappings()).orElse(Collections.emptyMap());
+
+            Consumer<AnnotationDefinition> annotationAutoImportProcessor = annotationDefinition -> {
+                String annotationName = annotationDefinition.getAnnotationName();
+                if (mappings.containsKey(annotationName)) {
+                    annotationDefinition.getImports().add(mappings.get(annotationName));
+                }
+            };
+
+            // process HandlerClass common
+
+            // process Controller class
+            apiResolveResult.getClasses().forEach(handlerClass -> {
+                handlerClass.getControllerAnnotations().get().forEach(annotationAutoImportProcessor);
+                handlerClass.getHandlerMethods().forEach(handlerMethod -> {
+                    handlerMethod.getControllerAnnotations().get().forEach(annotationAutoImportProcessor);
+                });
+            });
+
+            // process FeignClient class
+
+            // process Service class
+
+            // process DTO class
+            Consumer<Dto> dtoAnnotationAutoImportProcessor = dto -> {
+                dto.getAnnotations().get().forEach(annotationAutoImportProcessor);
+                dto.getFields().forEach(field -> {
+                    field.getAnnotations().get().forEach(annotationAutoImportProcessor);
+                });
+            };
+            Consumer<Dto> recurDtoAnnotationAutoImportProcessor = dto -> {
+                dtoAnnotationAutoImportProcessor.accept(dto);
+                dto.getInnerDtos().forEach(dtoAnnotationAutoImportProcessor);
+            };
+            apiResolveResult.getDtos().forEach(recurDtoAnnotationAutoImportProcessor);
+
+        });
     }
 
     private void checkDtoStringField(ApiResolveResult apiResolveResult, GlobalConfig config) {
@@ -120,9 +159,26 @@ public class ApiCodegenRunner {
         Optional.ofNullable(config)
                 .map(GlobalConfig::getCustom)
                 .map(CustomConfig::getDto)
-                .ifPresent(dto -> {
-                    customDtoToString(apiResolveResult, config);
-                });
+                .map(CustomConfig.DTO::getToString)
+                .ifPresent(toString -> customDtoToString(apiResolveResult, config));
+
+        Optional.ofNullable(config)
+                .map(GlobalConfig::getCustom)
+                .map(CustomConfig::getDto)
+                .map(CustomConfig.DTO::getBuilder)
+                .ifPresent(builder -> customDtoBuilder(apiResolveResult, config));
+
+    }
+
+    private void customDtoBuilder(ApiResolveResult apiResolveResult, GlobalConfig config) {
+        CustomConfig.Builder builder = config.getCustom().getDto().getBuilder();
+        Optional.ofNullable(builder.getLombok()).ifPresent(lombok -> {
+            apiResolveResult.getDtos().forEach(dto -> {
+                dto.getAnnotations().add(AnnotationUtils.lombokBuilder());
+                dto.getAnnotations().add(AnnotationUtils.lombokGetter());
+                dto.setHasBuilder(true);
+            });
+        });
     }
 
     private void customDtoToString(ApiResolveResult apiResolveResult, GlobalConfig config) {
@@ -169,7 +225,7 @@ public class ApiCodegenRunner {
     private void generateControllerFile(GlobalConfig config, ApiResolveResult apiResolveResult) {
         PathWrapper pathWrapper = new PathWrapper(config);
         apiResolveResult.getClasses().forEach((controllerMeta) -> {
-            Map<String, Object> params = new HashMap(8);
+            Map<String, Object> params = new HashMap<>(8);
             params.put("handlerClass", controllerMeta);
             params.put("config", config);
             File file = new File(pathWrapper.getControllerPackagePath() + controllerMeta.getName() + ".java");

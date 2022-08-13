@@ -29,6 +29,8 @@ public class Dto implements Importable {
 
     private Boolean isGetParamsDTO = Boolean.FALSE;
 
+    private Boolean hasBuilder = Boolean.FALSE;
+
     private final DataHolder<String> imports = new DataHolder<>();
 
     private final DataHolder<AnnotationDefinition> annotations = new DataHolder<>();
