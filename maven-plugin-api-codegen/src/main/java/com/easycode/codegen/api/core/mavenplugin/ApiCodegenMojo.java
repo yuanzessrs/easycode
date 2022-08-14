@@ -2,10 +2,7 @@ package com.easycode.codegen.api.core.mavenplugin;
 
 import com.easycode.codegen.api.core.ApiCodegenRunner;
 import com.easycode.codegen.api.core.config.GlobalConfig;
-import java.io.File;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import com.easycode.codegen.utils.Methods;
 import lombok.SneakyThrows;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
@@ -13,6 +10,11 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+
+import java.io.File;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -57,7 +59,11 @@ public class ApiCodegenMojo extends AbstractMojo {
 
     private void run(GlobalConfig config) {
         String defaultApiDirPath = resourceDir + File.separator + "api";
-        config.setApiDefineDirPath(Optional.ofNullable(config.getApiDefineDirPath()).orElse(defaultApiDirPath));
+        config.setDefinitionPath(Methods.or(
+                config.getDefinitionPath(),
+                config.getApiDefineDirPath(),
+                defaultApiDirPath
+        ));
         config.setSrcJavaPath(Optional.ofNullable(config.getSrcJavaPath()).orElse(srcDir));
         new ApiCodegenRunner().start(config);
     }

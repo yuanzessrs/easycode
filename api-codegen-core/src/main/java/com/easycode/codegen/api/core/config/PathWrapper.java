@@ -49,6 +49,10 @@ public class PathWrapper {
                 .orElseGet(() -> getBasePackagePath() + config.getFeignClientPackageName() + File.separator);
     }
 
+    public String getPackagePath(String customPkg) {
+        return processPackageToProjectPath(customPkg);
+    }
+
     /**
      * @return Application所在路径
      */
@@ -60,12 +64,11 @@ public class PathWrapper {
     }
 
     private String processPackageToProjectPath(String packageVal) {
-        return Optional.ofNullable(packageVal)
-                .map(val -> config.getSrcJavaPath()
-                        + File.separator
-                        + packageVal.replace(".", File.separator)
-                        + File.separator
-                ).orElse(null);
+        return Optional.ofNullable(packageVal).map(val -> config.getSrcJavaPath()
+                + File.separator
+                + packageVal.replace(".", File.separator)
+                + File.separator
+        ).orElse(null);
     }
 
 }

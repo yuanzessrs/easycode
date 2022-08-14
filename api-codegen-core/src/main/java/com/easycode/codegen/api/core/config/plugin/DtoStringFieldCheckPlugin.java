@@ -1,9 +1,10 @@
 package com.easycode.codegen.api.core.config.plugin;
 
-import java.util.List;
-import java.util.stream.Collectors;
 import lombok.Data;
 import org.springframework.util.ObjectUtils;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @class-name: DtoStringFieldCheckPlugin
@@ -29,9 +30,7 @@ public class DtoStringFieldCheckPlugin {
 
         public String toString() {
             return ObjectUtils.isEmpty(this.properties) ? "@" + this.name
-                    : "@" + this.name + "(" + (String) this.properties.stream()
-                            .map(DtoStringFieldCheckPlugin.FilterAnnotation.Property::toString).collect(
-                                    Collectors.joining(", ")) + ")";
+                    : "@" + this.name + "(" + this.properties.stream().map(Property::toString).collect(Collectors.joining(", ")) + ")";
         }
 
         @Data

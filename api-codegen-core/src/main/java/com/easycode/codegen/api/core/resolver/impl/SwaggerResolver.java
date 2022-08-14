@@ -3,17 +3,14 @@ package com.easycode.codegen.api.core.resolver.impl;
 import com.easycode.codegen.api.core.constants.HandlerMethodParamTag;
 import com.easycode.codegen.api.core.constants.SwaggerConstants;
 import com.easycode.codegen.api.core.enums.TypeMapping;
-import com.easycode.codegen.api.core.meta.ApiResolveResult;
 import com.easycode.codegen.api.core.meta.Dto;
 import com.easycode.codegen.api.core.meta.Dto.Field;
 import com.easycode.codegen.api.core.meta.HandlerClass;
 import com.easycode.codegen.api.core.meta.HandlerMethod;
+import com.easycode.codegen.api.core.meta.ResolveResult;
 import com.easycode.codegen.api.core.resolver.IResolver;
 import com.easycode.codegen.api.core.resolver.ResolverContext;
-import com.easycode.codegen.api.core.util.AnnotationUtils;
-import com.easycode.codegen.api.core.util.SpringAnnotations;
-import com.easycode.codegen.api.core.util.SwaggerUtils;
-import com.easycode.codegen.api.core.util.SwaggerVendorExtensions;
+import com.easycode.codegen.api.core.util.*;
 import com.easycode.codegen.utils.FormatUtils;
 import com.easycode.codegen.utils.Methods;
 import io.swagger.models.*;
@@ -24,17 +21,12 @@ import io.swagger.models.properties.Property;
 import io.swagger.models.properties.RefProperty;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -56,39 +48,24 @@ public class SwaggerResolver implements IResolver {
         this.context = context;
     }
 
-    public ApiResolveResult resolve() {
-        File[] swaggerFiles = scanSwaggerFiles(context.getDefinitionFilesDirPath());
-        List<ApiResolveResult> swaggerResolveResults = Arrays
-                .stream(swaggerFiles)
+    public ResolveResult resolve() {
+        List<ResolveResult> resolveResults = scanSwaggerFiles(context.getDefinitionPath())
+                .stream()
                 .map(SwaggerUtils::toSwagger)
-                .map(this::resolveSwagger)
+                .map(this::resolve)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
-        // 检查重名dto
-        checkDuplicatedNameController(swaggerResolveResults);
-//        checkDuplicatedNameDto(swaggerResolveResults);
-        ApiResolveResult result = new ApiResolveResult();
-        result.setClasses(
-                swaggerResolveResults.stream()
-                        .flatMap(o -> o.getClasses().stream())
-                        .collect(Collectors.toList())
-        );
-        result.setDtos(
-                swaggerResolveResults.stream()
-                        .flatMap(o -> o.getDtos().stream())
-                        .collect(Collectors.toList())
-        );
-        return result;
+        return ResolveResult.merge(resolveResults);
     }
 
-    private ApiResolveResult resolveSwagger(Swagger swagger) {
+    private ResolveResult resolve(Swagger swagger) {
         // 关闭的swagger文档不处理
         if (SwaggerVendorExtensions.isIgnore(swagger.getVendorExtensions())) {
             // log
             return null;
         }
         // 解析需要生成的dto对象
-        List<Dto> dtos = parseDefinitions(swagger);
+        List<Dto> dtos = parseDtos(swagger);
         // 需要生成的controller对象
         Map<String, HandlerClass> controllerMetaMap = parseControllerMap(swagger);
         List<String> globalProduces = Optional.ofNullable(swagger.getProduces()).orElse(Collections.emptyList());
@@ -186,7 +163,7 @@ public class SwaggerResolver implements IResolver {
                 handlerClass.getHandlerMethods().add(handlerMethod);
             });
         });
-        ApiResolveResult resolveResult = new ApiResolveResult();
+        ResolveResult resolveResult = new ResolveResult();
         resolveResult.setClasses(new ArrayList<>(controllerMetaMap.values()));
         resolveResult.setDtos(dtos);
         return resolveResult;
@@ -198,7 +175,7 @@ public class SwaggerResolver implements IResolver {
      * @param swagger swagger文档对象
      * @return 解析出来的dto定义
      */
-    private List<Dto> parseDefinitions(Swagger swagger) {
+    private List<Dto> parseDtos(Swagger swagger) {
         return Optional.ofNullable(swagger)
                 .map(Swagger::getDefinitions)
                 .orElse(Collections.emptyMap())
@@ -390,14 +367,10 @@ public class SwaggerResolver implements IResolver {
                     handlerClass.setBasePath(swagger.getBasePath());
                     handlerClass.setHandlerMethods(new ArrayList<>(16));
 
-                    handlerClass.getAnnotations()
-                            .add(parseAnnotations(tag.getVendorExtensions()));
-                    handlerClass.getControllerAnnotations()
-                            .add(parseControllerAnnotations(tag.getVendorExtensions()));
-                    handlerClass.getServiceAnnotations()
-                            .add(parseServiceAnnotations(tag.getVendorExtensions()));
-                    handlerClass.getFeignClientAnnotations()
-                            .add(parseFeignClientAnnotations(tag.getVendorExtensions()));
+                    handlerClass.getAnnotations().add(parseAnnotations(tag.getVendorExtensions()));
+                    handlerClass.getControllerAnnotations().add(parseControllerAnnotations(tag.getVendorExtensions()));
+                    handlerClass.getServiceAnnotations().add(parseServiceAnnotations(tag.getVendorExtensions()));
+                    handlerClass.getFeignClientAnnotations().add(parseFeignClientAnnotations(tag.getVendorExtensions()));
                     handlerClass.getImports().add(getImports(tag.getVendorExtensions()));
 
                     handlerClass.getControllerAnnotations().add(
@@ -406,7 +379,7 @@ public class SwaggerResolver implements IResolver {
                     );
 
                     handlerClass.getFeignClientAnnotations().add(
-                            SpringAnnotations.FeignClient(context.getApplicationName()),
+                            SpringAnnotations.FeignClient(SwaggerVendorExtensions.getFeignClientName(tag.getVendorExtensions())),
                             SpringAnnotations.Validated()
                     );
 
@@ -653,59 +626,15 @@ public class SwaggerResolver implements IResolver {
      * @return swagger files
      */
     @SneakyThrows
-    private File[] scanSwaggerFiles(String swaggerApiDirPath) {
-        File apiResourceDir = new File(swaggerApiDirPath);
-        FileUtils.forceMkdir(apiResourceDir);
-        File[] swaggerFiles = apiResourceDir.listFiles((file, name) -> name.endsWith(".yaml") || name.endsWith(".yml"));
-        Objects.requireNonNull(swaggerFiles, "没有找到swagger定义文档");
+    private List<File> scanSwaggerFiles(String swaggerApiDirPath) {
+        List<File> swaggerFiles = FileUtil.parse(swaggerApiDirPath)
+                .stream()
+                .filter(file -> file.getName().endsWith(".yaml") || file.getName().endsWith(".yml"))
+                .collect(Collectors.toList());
+        if (ObjectUtils.isEmpty(swaggerFiles)) {
+            throw new RuntimeException("没有找到swagger定义文档");
+        }
         return swaggerFiles;
-    }
-
-    /**
-     * 检查重名 controller
-     *
-     * @param resolverApiResolveResults swagger parse results
-     */
-    private void checkDuplicatedNameController(List<ApiResolveResult> resolverApiResolveResults) {
-        // 检查重名dto
-        resolverApiResolveResults.stream()
-                .flatMap(o -> o.getClasses().stream())
-                .map(HandlerClass::getName)
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
-                .entrySet()
-                .stream()
-                .filter(entry -> entry.getValue() > 1)
-                .map(Map.Entry::getKey)
-                .findFirst()
-                .ifPresent(sameName -> {
-                    throw new RuntimeException(String.format("存在同名tag :%s，会导致文件覆盖,请检查!", sameName));
-                });
-    }
-
-    /**
-     * 检查重名dto
-     *
-     * @param resolverApiResolveResults swagger parse results
-     */
-    private void checkDuplicatedNameDto(List<ApiResolveResult> resolverApiResolveResults) {
-        // 检查重名dto
-        resolverApiResolveResults.stream()
-                .flatMap(o -> o.getDtos().stream())
-                .map(Dto::getName)
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
-                .entrySet()
-                .stream()
-                .filter(entry -> entry.getValue() > 1)
-                .map(Map.Entry::getKey)
-                .findFirst()
-                .ifPresent(sameName -> {
-                    throw new RuntimeException(String.format("存在同名DTO:%s，会导致文件覆盖,请检查!", sameName));
-                });
-    }
-
-    @SneakyThrows
-    private String readFile(File swaggerFile) {
-        return IOUtils.toString(new FileInputStream(swaggerFile), StandardCharsets.UTF_8);
     }
 
 }

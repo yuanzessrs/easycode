@@ -2,7 +2,7 @@ package com.easycode.codegen.api.core.resolver.impl;
 
 import com.easycode.codegen.api.core.constants.SwaggerConstants;
 import com.easycode.codegen.api.core.enums.TypeMapping;
-import com.easycode.codegen.api.core.meta.ApiResolveResult;
+import com.easycode.codegen.api.core.meta.ResolveResult;
 import com.easycode.codegen.api.core.meta.Dto;
 import com.easycode.codegen.api.core.meta.HandlerClass;
 import com.easycode.codegen.api.core.resolver.IResolver;
@@ -10,6 +10,7 @@ import com.easycode.codegen.api.core.resolver.ResolverContext;
 import com.easycode.codegen.api.core.util.AnnotationUtils;
 import com.easycode.codegen.api.core.util.SpringAnnotations;
 import com.easycode.codegen.api.core.util.SwaggerUtils;
+import com.easycode.codegen.api.core.util.SwaggerVendorExtensions;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.ArraySchema;
@@ -44,8 +45,8 @@ public class OpenapiResolver implements IResolver {
     }
 
     @Override
-    public ApiResolveResult resolve() {
-        List<ApiResolveResult> resolveResults = SwaggerUtils.scan(context.getDefinitionFilesDirPath())
+    public ResolveResult resolve() {
+        List<ResolveResult> resolveResults = SwaggerUtils.scan(context.getDefinitionPath())
                 .stream()
                 .map(SwaggerUtils::toOpenAPI)
                 // sort OpenAPI
@@ -57,7 +58,7 @@ public class OpenapiResolver implements IResolver {
         // dto重复校验
 
 
-        return ApiResolveResult.merge(resolveResults);
+        return ResolveResult.merge(resolveResults);
     }
 
     @AllArgsConstructor
@@ -71,7 +72,7 @@ public class OpenapiResolver implements IResolver {
 
         private final Map<String, Dto> dtoMap = new HashMap<>();
 
-        private final ApiResolveResult result = new ApiResolveResult();
+        private final ResolveResult result = new ResolveResult();
 
         {
             result.setClasses(new ArrayList<>());
@@ -79,7 +80,7 @@ public class OpenapiResolver implements IResolver {
         }
 
         @Override
-        public ApiResolveResult resolve() {
+        public ResolveResult resolve() {
             if (isSkip()) {
                 // log
                 return null;
@@ -121,7 +122,8 @@ public class OpenapiResolver implements IResolver {
                 // default annotation
                 handlerClass.getAnnotations().add(SpringAnnotations.Validated());
                 handlerClass.getControllerAnnotations().add(SpringAnnotations.Controller());
-                handlerClass.getFeignClientAnnotations().add(SpringAnnotations.FeignClient(context.getApplicationName()));
+                handlerClass.getFeignClientAnnotations()
+                        .add(SpringAnnotations.FeignClient(SwaggerVendorExtensions.getFeignClientName(tag.getExtensions())));
                 handlerClass.getServiceAnnotations().add(Collections.emptyList());
 
 //                        if (!ObjectUtils.isEmpty(handlerClass.getBasePath())) {

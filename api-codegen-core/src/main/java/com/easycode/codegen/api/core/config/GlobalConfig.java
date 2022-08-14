@@ -17,9 +17,15 @@ public class GlobalConfig {
     private String generateType = "SpringMvc";
 
     /**
-     * swagger文档目录
+     * swagger文档目录 @后续使用definitionPath
+     *
      */
+    @Deprecated
     private String apiDefineDirPath;
+
+
+    private String definitionPath;
+
     /**
      * 项目src目录的路径(默认可以从pom取，如果要生成在其他地方可自定义)
      */
@@ -55,13 +61,8 @@ public class GlobalConfig {
      */
     private String feignClientPackageName = "clients";
 
-    /**
-     * app名称
-     */
-    private String applicationName;
-
     private CustomConfig custom;
 
-    private PluginConfig plugins;
+    private Plugins plugins;
 
 }

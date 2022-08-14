@@ -8,8 +8,6 @@ package com.easycode.codegen.api.core.constants;
  */
 public class SwaggerConstants {
 
-    public static final String SPLIT_REGEX = ";|,|；|，";
-
     public static final String TYPE_OBJECT = "object";
 
     public static final String TYPE_ARRAY = "array";

@@ -1,6 +1,7 @@
 package com.easycode.codegen.api.core.resolver;
 
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
 
 /**
  * @class-name: SwaggerResolverContext
@@ -8,11 +9,10 @@ import lombok.Data;
  * @author: Mr.Zeng
  * @date: 2022-01-11 18:44
  */
-@Data
+@Builder
+@Getter
 public class ResolverContext {
 
-    private String definitionFilesDirPath;
-
-    private String applicationName;
+    private String definitionPath;
 
 }

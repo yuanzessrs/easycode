@@ -1,19 +1,13 @@
 package com.easycode.codegen.api.core.util;
 
-import com.easycode.codegen.api.core.constants.SwaggerConstants;
+import com.easycode.codegen.api.core.constants.GlobalConstants;
 import com.easycode.codegen.api.core.meta.AnnotationDefinition;
 import org.springframework.util.ObjectUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class SwaggerVendorExtensions {
-
-    private static final Map<String, AnnotationDefinition> SUPPORT_ANNOTATION_MAP = new HashMap<String, AnnotationDefinition>() {{
-        put("jsonInclude", AnnotationUtils.jsonInclude());
-        put("jsonIgnore", AnnotationUtils.jsonIgnore());
-    }};
 
     public static String getXFieldVal(Map<String, Object> vendorExtensions, String key) {
         return Optional.ofNullable(vendorExtensions)
@@ -68,7 +62,7 @@ public class SwaggerVendorExtensions {
         if (it instanceof Collection) {
             return ((Collection<?>) it).stream().map(o -> (String) o).map(String::trim).collect(Collectors.toList());
         }
-        return Arrays.stream(((String) it).split(SwaggerConstants.SPLIT_REGEX))
+        return Arrays.stream(((String) it).split(GlobalConstants.SPLIT_REGEX))
                 .filter(o -> null != o && !o.isEmpty())
                 .map(String::trim)
                 .collect(Collectors.toList());
@@ -88,29 +82,6 @@ public class SwaggerVendorExtensions {
 
     public static List<AnnotationDefinition> parseAnnotations(Map<String, Object> vendorExtensions) {
         return parseAnnotations("x-@", vendorExtensions);
-    }
-
-    public static List<AnnotationDefinition> parsePresetAnnotations(Map<String, Object> vendorExtensions) {
-        String xFiledName = "x-@";
-        Object val = vendorExtensions.get(xFiledName);
-        if (val == null) {
-            return Collections.emptyList();
-        }
-        Stream<String> supportAnnotationNames;
-        if (val instanceof Collection) {
-            supportAnnotationNames = ((Collection) val).stream();
-        } else if (val instanceof String) {
-            supportAnnotationNames = Stream.of(((String) val).split(SwaggerConstants.SPLIT_REGEX));
-        } else {
-            throw new RuntimeException(xFiledName + ", value 格式异常，仅支持 List ｜ Array ｜ String");
-        }
-        return supportAnnotationNames.distinct().map(supportAnnotationName -> {
-            AnnotationDefinition supportAnnotation = SUPPORT_ANNOTATION_MAP.get(supportAnnotationName);
-            if (supportAnnotation == null) {
-                throw new RuntimeException(xFiledName + "不支持该枚举:" + supportAnnotationName);
-            }
-            return supportAnnotation;
-        }).collect(Collectors.toList());
     }
 
     public static List<AnnotationDefinition> parseAnnotations(String keyPrefix, Map<String, Object> vendorExtensions) {
@@ -140,5 +111,12 @@ public class SwaggerVendorExtensions {
                 }).collect(Collectors.toList());
     }
 
+    public static String getFeignClientName(Map<String, Object> vendorExtensions) {
+        return getXFieldVal(vendorExtensions, "FeignClientName");
+    }
+
+    public static String getPackage(Map<String, Object> vendorExtensions) {
+        return getXFieldVal(vendorExtensions, "package");
+    }
 
 }
