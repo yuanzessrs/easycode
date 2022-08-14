@@ -49,27 +49,29 @@ public class SwaggerResolver implements IResolver {
     }
 
     public ResolveResult resolve() {
-        List<ResolveResult> resolveResults = scanSwaggerFiles(context.getDefinitionPath())
-                .stream()
-                .map(SwaggerUtils::toSwagger)
-                .map(this::resolve)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-        return ResolveResult.merge(resolveResults);
+        return ResolveResult.merge(
+                scanSwaggerFiles(context.getDefinitionPath())
+                        .stream()
+                        .map(SwaggerUtils::toSwagger)
+                        .map(this::resolve)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList())
+        );
     }
 
     private ResolveResult resolve(Swagger swagger) {
         // 关闭的swagger文档不处理
-        if (SwaggerVendorExtensions.isIgnore(swagger.getVendorExtensions())) {
+        if (isIgnore(swagger.getVendorExtensions())) {
             // log
             return null;
         }
-        // 解析需要生成的dto对象
+
         List<Dto> dtos = parseDtos(swagger);
-        // 需要生成的controller对象
         Map<String, HandlerClass> controllerMetaMap = parseControllerMap(swagger);
+
         List<String> globalProduces = Optional.ofNullable(swagger.getProduces()).orElse(Collections.emptyList());
         List<String> globalConsumes = Optional.ofNullable(swagger.getConsumes()).orElse(Collections.emptyList());
+
         if (globalConsumes.size() > 1 || globalProduces.size() > 1) {
             throw new RuntimeException("consumes or produces only support one element.");
         }
@@ -115,11 +117,6 @@ public class SwaggerResolver implements IResolver {
                     throw new RuntimeException("consumes or produces only support one element.");
                 }
 
-                if (handlerMethod.enableResponseBody()) {
-                    handlerMethod.getControllerAnnotations().add(SpringAnnotations.ResponseBody());
-                    handlerMethod.getFeignClientAnnotations().add(SpringAnnotations.ResponseBody());
-                }
-
                 handlerMethod.getControllerAnnotations().add(SpringAnnotations.RequestMapping(
                         handlerMethod.getUrl(),
                         handlerMethod.getConsumes(), handlerMethod.getProduces(),
@@ -133,19 +130,11 @@ public class SwaggerResolver implements IResolver {
                 ));
 
                 // setting handlerMethod params
-                handlerMethod.setHandlerMethodParams(getHandlerMethodParams(op.getOperationId(),
-                        op.getParameters(), dtos, op.getVendorExtensions()));
-                if (handlerMethod.enableRequestBody()) {
-                    handlerMethod.getHandlerMethodParams()
-                            .stream()
-                            .filter(p -> p.getTag() == HandlerMethodParamTag.BODY)
-                            .forEach(param -> {
-                                param.getControllerAnnotations().add(SpringAnnotations.RequestBody());
-                                param.getFeignClientAnnotations().add(SpringAnnotations.RequestBody());
-                            });
-                }
+                handlerMethod.setHandlerMethodParams(getHandlerMethodParams(op.getOperationId(), op.getParameters(), dtos, extParams));
+
                 // setting handlerMethod return def
                 handlerMethod.setHandlerMethodReturn(getHandlerMethodReturn(op));
+
                 // 集成path上的注解, 当前方法的扩展注解
                 handlerMethod.getAnnotations().add(parseAnnotations(pathExtParams));
                 handlerMethod.getControllerAnnotations().add(parseControllerAnnotations(pathExtParams));
@@ -156,10 +145,26 @@ public class SwaggerResolver implements IResolver {
                 handlerMethod.getControllerAnnotations().add(parseControllerAnnotations(extParams));
                 handlerMethod.getServiceAnnotations().add(parseServiceAnnotations(extParams));
                 handlerMethod.getFeignClientAnnotations().add(parseFeignClientAnnotations(extParams));
+
                 // 集成path上的import, 当前方法的import
                 handlerMethod.getImports().add(getImports(pathExtParams));
                 handlerMethod.getImports().add(getImports(extParams));
-                // 收集 handlerMethod
+
+                if (handlerMethod.enableRequestBody()) {
+                    handlerMethod.getHandlerMethodParams()
+                            .stream()
+                            .filter(p -> p.getTag() == HandlerMethodParamTag.BODY)
+                            .forEach(param -> {
+                                param.getControllerAnnotations().add(SpringAnnotations.RequestBody());
+                                param.getFeignClientAnnotations().add(SpringAnnotations.RequestBody());
+                            });
+                }
+
+                if (handlerMethod.enableResponseBody()) {
+                    handlerMethod.getControllerAnnotations().add(SpringAnnotations.ResponseBody());
+                    handlerMethod.getFeignClientAnnotations().add(SpringAnnotations.ResponseBody());
+                }
+
                 handlerClass.getHandlerMethods().add(handlerMethod);
             });
         });
@@ -189,8 +194,7 @@ public class SwaggerResolver implements IResolver {
                         log.warn("definition 只处理 type=object 的定义，已跳过当前定义:{}!", definitionName);
                         return null;
                     }
-                    ModelImpl modelImpl = (ModelImpl) o.getValue();
-                    return toDto(definitionName, modelImpl);
+                    return toDto(definitionName, (ModelImpl) o.getValue());
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
@@ -206,7 +210,7 @@ public class SwaggerResolver implements IResolver {
     }
 
     private Dto toDto(String definitionName, String description, Map<String, Property> properties, Map<String, Object> vendorExtensions) {
-        if (SwaggerVendorExtensions.isIgnore(vendorExtensions)) {
+        if (isIgnore(vendorExtensions)) {
             return null;
         }
         Map<String, String> renameMap = getRenameMap(vendorExtensions);
@@ -214,8 +218,6 @@ public class SwaggerResolver implements IResolver {
         Dto dto = new Dto();
         dto.setName(getClassNameFromDefinitionName(definitionName));
         dto.setDescription(description);
-        // 默认注解
-        dto.getAnnotations().add(AnnotationUtils.jsonInclude(), AnnotationUtils.jsonIgnore());
         // 自定义注解
         dto.getAnnotations().add(parseAnnotations(vendorExtensions));
         dto.getImports().add(SwaggerVendorExtensions.getImports(vendorExtensions));
@@ -477,8 +479,6 @@ public class SwaggerResolver implements IResolver {
     private Dto createQueryParamsDto(String opName, List<QueryParameter> queryParameters) {
         Dto dto = new Dto();
         dto.setIsGetParamsDTO(Boolean.TRUE);
-        // 默认注解
-        dto.getAnnotations().add(AnnotationUtils.jsonInclude(), AnnotationUtils.jsonIgnore());
         dto.setName(SwaggerUtils.getClassNameFromHandlerMethodName(opName));
         dto.setDescription(opName + "方法查询参数");
         AtomicInteger index = new AtomicInteger();
@@ -490,19 +490,17 @@ public class SwaggerResolver implements IResolver {
             }
             field.setIndex(index.incrementAndGet());
             field.setName(parameter.getName());
-            //获取别名
-            Optional.ofNullable(getRenameVal(parameter.getVendorExtensions()))
-                    .filter(val -> !ObjectUtils.isEmpty(val))
-                    .ifPresent(javaFieldName -> {
-                        String apiDefName = field.getName();
-                        field.setName(javaFieldName.trim());
-                        field.setAliasValues(Collections.singletonList(apiDefName));
-                    });
             // 默认值
             field.setValue(Optional.ofNullable(parameter.getDefaultValue()).map(Object::toString).orElse(null));
             field.setDescription(parameter.getDescription());
             field.getAnnotations().add(parseAnnotations(parameter.getVendorExtensions()));
             field.getImports().add(getImports(parameter.getVendorExtensions()));
+            //获取别名
+            getOptionalRename(parameter.getVendorExtensions()).ifPresent(javaFieldName -> {
+                String apiDefName = field.getName();
+                field.setName(javaFieldName.trim());
+                field.setAliasValues(Collections.singletonList(apiDefName));
+            });
             if (SwaggerConstants.TYPE_ARRAY.equals(parameter.getType())) {
                 if (null == parameter.getItems()) {
                     throw new RuntimeException("QueryParam array类型参数应该具备子类型!");

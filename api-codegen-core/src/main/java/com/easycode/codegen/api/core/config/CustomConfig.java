@@ -28,6 +28,8 @@ public class CustomConfig {
     @Data
     public static class DTO {
 
+        private List<Annotation> presetAnnotations;
+
         private ToString toString;
 
         private Builder builder;

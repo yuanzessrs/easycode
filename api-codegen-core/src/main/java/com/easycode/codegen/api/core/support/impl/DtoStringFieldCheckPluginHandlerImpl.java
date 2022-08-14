@@ -1,8 +1,8 @@
 package com.easycode.codegen.api.core.support.impl;
 
+import com.easycode.codegen.api.core.config.Annotation;
 import com.easycode.codegen.api.core.config.GlobalConfig;
 import com.easycode.codegen.api.core.config.Plugins;
-import com.easycode.codegen.api.core.config.plugin.DtoStringFieldCheckPlugin.FilterAnnotation;
 import com.easycode.codegen.api.core.constants.GlobalConstants;
 import com.easycode.codegen.api.core.meta.AnnotationDefinition;
 import com.easycode.codegen.api.core.meta.Dto;
@@ -15,12 +15,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * @class-name: DtoStringFieldCheckPluginHandler
+ * @class-name: DtoStringFieldCheckPluginHandlerImpl
  * @description:
  * @author: Mr.Zeng
  * @date: 2022-08-13 20:28
  */
-public class DtoStringFieldCheckPluginHandler implements IExtendHandler {
+public class DtoStringFieldCheckPluginHandlerImpl implements IExtendHandler {
 
     @Override
     public void handle(GlobalConfig config, ResolveResult resolveResult) {
@@ -45,7 +45,7 @@ public class DtoStringFieldCheckPluginHandler implements IExtendHandler {
                     .ofNullable(plugin.getFilterByAnnotations())
                     .orElse(Collections.emptyList())
                     .stream()
-                    .map(FilterAnnotation::toString)
+                    .map(Annotation::toString)
                     .collect(Collectors.toSet());
 
             if (!CollectionUtils.isEmpty(targetFields)) {

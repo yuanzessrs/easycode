@@ -49,6 +49,11 @@ public class SwaggerVendorExtensions {
         return getXFieldVal(vendorExtensions, "rename");
     }
 
+    public static Optional<String> getOptionalRename(Map<String, Object> vendorExtensions) {
+        return Optional.ofNullable(getRenameVal(vendorExtensions))
+                .filter(val -> !ObjectUtils.isEmpty(val));
+    }
+
     public static boolean isIgnore(Map<String, Object> vendorExtensions) {
         return "true".equalsIgnoreCase(getXFieldVal(vendorExtensions, "ignore"))
                 || "true".equalsIgnoreCase(getXFieldVal(vendorExtensions, "disabled"));

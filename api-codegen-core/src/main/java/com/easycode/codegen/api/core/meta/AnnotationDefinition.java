@@ -54,6 +54,20 @@ public class AnnotationDefinition implements Comparable<AnnotationDefinition> {
         properties.add(property);
     }
 
+    /**
+     * 添加属性
+     *
+     * @param name          属性名
+     * @param values         属性值
+     * @param enabledQuotes 是否加引号
+     */
+    public void addProperty(String name, List<String> values, boolean enabledQuotes) {
+        Objects.requireNonNull(values, "values  must not be bull");
+        Property property = new Property(name, values, enabledQuotes);
+        properties = Optional.ofNullable(properties).orElse(new ArrayList<>());
+        properties.add(property);
+    }
+
     @Override
     public String toString() {
         if (ObjectUtils.isEmpty(properties)) {
@@ -71,6 +85,8 @@ public class AnnotationDefinition implements Comparable<AnnotationDefinition> {
 
         private String value;
 
+        private List<String> values;
+
         private boolean enabledQuotes;
 
         public Property(String name, String value, boolean enabledQuotes) {
@@ -79,14 +95,35 @@ public class AnnotationDefinition implements Comparable<AnnotationDefinition> {
             this.enabledQuotes = enabledQuotes;
         }
 
-        // todo valueImport
-        @Override
+        public Property(String name, List<String> values, boolean enabledQuotes) {
+            this.name = name;
+            this.values = values;
+            this.enabledQuotes = enabledQuotes;
+        }
+
         public String toString() {
-            if (name == null || "".equals(name.trim())) {
-                return enabledQuotes ? "\"" + value + "\"" : value;
-            }
-            String format = enabledQuotes ? "%s = \"%s\"" : "%s = %s";
-            return String.format(format, name, value);
+            return generateKeyPrefix() + generateValueOutput();
+        }
+
+        private String generateKeyPrefix() {
+            return (this.name != null && !"".equals(this.name.trim())) ? name + " = " : "";
+        }
+
+        private String generateValueOutput() {
+            return ObjectUtils.isEmpty(values) ? generateSingleValueOutput(this.value) : generateArrayValueOutput(this.values);
+        }
+
+        public String generateSingleValueOutput(String val) {
+            return getPadding() + this.value + getPadding();
+        }
+
+        public String generateArrayValueOutput(List<String> vals) {
+            //{"1","2"}
+            return "{" + vals.stream().map(this::generateSingleValueOutput).collect(Collectors.joining(", ")) + "}";
+        }
+
+        private String getPadding() {
+            return this.enabledQuotes ? "\"" : "";
         }
 
     }

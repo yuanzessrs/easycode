@@ -20,8 +20,9 @@ public class ExtendManager {
     static {
         EXTEND_HANDLERS.add(new CustomDtoToStringHandlerImpl());
         EXTEND_HANDLERS.add(new CustomDTOBuilderHandlerImpl());
+        EXTEND_HANDLERS.add(new CustomDTOPresetAnnotationHandlerImpl());
         EXTEND_HANDLERS.add(new ClassAutoImportHandlerImpl());
-        EXTEND_HANDLERS.add(new DtoStringFieldCheckPluginHandler());
+        EXTEND_HANDLERS.add(new DtoStringFieldCheckPluginHandlerImpl());
 
         EXTEND_HANDLERS.add(new DuplicatedNameControllerCheckHandlerImpl());
 //        EXTEND_HANDLERS.add(new DuplicatedNameDTOCheckHandlerImpl());
