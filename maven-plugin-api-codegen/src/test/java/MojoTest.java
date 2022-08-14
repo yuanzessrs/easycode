@@ -1,6 +1,6 @@
 import com.easycode.codegen.api.core.mavenplugin.ApiCodegenMojo;
-import org.apache.maven.plugin.testing.AbstractMojoTestCase;
 import org.apache.maven.plugin.testing.MojoRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -22,6 +22,7 @@ public class MojoTest {
     public MojoRule rule = new MojoRule();
 
     @Test
+    @Ignore
     public void testMojoGoal() throws Exception {
         File testPom = new File(getBasedir(), "src/test/resources/projects/demo/pom.xml");
         assertNotNull(testPom);

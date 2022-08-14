@@ -2,9 +2,10 @@ package com.easycode.codegen.api.core.support.impl;
 
 import com.easycode.codegen.api.core.config.GlobalConfig;
 import com.easycode.codegen.api.core.config.Plugins;
-import com.easycode.codegen.api.core.config.plugin.DtoStringFieldCheckPlugin;
+import com.easycode.codegen.api.core.config.plugin.DtoStringFieldCheckPlugin.FilterAnnotation;
 import com.easycode.codegen.api.core.constants.GlobalConstants;
 import com.easycode.codegen.api.core.meta.AnnotationDefinition;
+import com.easycode.codegen.api.core.meta.Dto;
 import com.easycode.codegen.api.core.meta.HandlerMethod;
 import com.easycode.codegen.api.core.meta.ResolveResult;
 import com.easycode.codegen.api.core.support.IExtendHandler;
@@ -40,36 +41,41 @@ public class DtoStringFieldCheckPluginHandler implements IExtendHandler {
                     .orElse(Collections.emptyList()));
             targetFields.addAll(Optional.ofNullable(plugin.getFields()).orElse(Collections.emptyList()));
 
-            if (!CollectionUtils.isEmpty(targetFields)) {
-                Optional.ofNullable(resolveResult.getDtos()).ifPresent((dtos) -> {
-                    dtos.stream().filter((dto) -> returnTypes.contains(dto.getName())).forEach((dto) -> {
-                        dto.getFields().forEach((field) -> {
-                            List<String> alias = Optional.ofNullable(field.getAliasValues()).orElse(Collections.emptyList());
-                            if (alias.stream().anyMatch(targetFields::contains)) {
-                                boolean isError = !"String".equals(field.getType()) && !"List<String>".equals(field.getType());
-                                if (isError) {
-                                    Set<String> filterByAnnotations = Optional
-                                            .ofNullable(plugin.getFilterByAnnotations())
-                                            .orElse(Collections.emptyList())
-                                            .stream()
-                                            .map(DtoStringFieldCheckPlugin.FilterAnnotation::toString)
-                                            .collect(Collectors.toSet());
-                                    isError = field.getAnnotations().get()
-                                            .stream()
-                                            .map(AnnotationDefinition::toString)
-                                            .noneMatch(filterByAnnotations::contains);
-                                }
-                                if (isError) {
-                                    String msg = String.format("dto: %s field: %s must be of type String", dto.getName(), field.getName());
-                                    throw new RuntimeException(msg);
-                                }
-                            }
+            Set<String> filterByAnnotationsStrSet = Optional
+                    .ofNullable(plugin.getFilterByAnnotations())
+                    .orElse(Collections.emptyList())
+                    .stream()
+                    .map(FilterAnnotation::toString)
+                    .collect(Collectors.toSet());
 
-                        });
-                    });
-                });
+            if (!CollectionUtils.isEmpty(targetFields)) {
+                Optional.ofNullable(resolveResult.getDtos()).ifPresent(dtos ->
+                        dtos.stream()
+                                .filter(dto -> dto.getName().endsWith("VO")) // todo
+                                .forEach(dto -> processDTO(dto, targetFields, filterByAnnotationsStrSet)));
             }
         });
+    }
+
+    private void processDTO(Dto dto, Set<String> targetFields, Set<String> filterByAnnotationsStrSet) {
+        dto.getFields().forEach((field) -> {
+            List<String> alias = Optional.ofNullable(field.getAliasValues()).orElse(Collections.emptyList());
+            if (alias.stream().anyMatch(targetFields::contains)) {
+                boolean isError = !"String".equals(field.getType()) && !"List<String>".equals(field.getType());
+                if (isError) {
+                    isError = field.getAnnotations().get()
+                            .stream()
+                            .map(AnnotationDefinition::toString)
+                            .noneMatch(filterByAnnotationsStrSet::contains);
+                }
+                if (isError) {
+                    String msg = String.format("dto: %s field: %s must be of type String", dto.getName(), field.getName());
+                    throw new RuntimeException(msg);
+                }
+            }
+
+        });
+        dto.getInnerDtos().forEach(innerDto -> processDTO(innerDto, targetFields, filterByAnnotationsStrSet));
     }
 
 }
