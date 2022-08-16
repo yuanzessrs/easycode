@@ -10,7 +10,9 @@ import com.easycode.codegen.api.core.meta.HandlerMethod;
 import com.easycode.codegen.api.core.meta.ResolveResult;
 import com.easycode.codegen.api.core.resolver.IResolver;
 import com.easycode.codegen.api.core.resolver.ResolverContext;
-import com.easycode.codegen.api.core.util.*;
+import com.easycode.codegen.api.core.util.AnnotationUtils;
+import com.easycode.codegen.api.core.util.SpringAnnotations;
+import com.easycode.codegen.api.core.util.SwaggerUtils;
 import com.easycode.codegen.utils.FormatUtils;
 import com.easycode.codegen.utils.Methods;
 import io.swagger.models.*;
@@ -19,12 +21,10 @@ import io.swagger.models.properties.ArrayProperty;
 import io.swagger.models.properties.ObjectProperty;
 import io.swagger.models.properties.Property;
 import io.swagger.models.properties.RefProperty;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
-import java.io.File;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -50,9 +50,8 @@ public class SwaggerResolver implements IResolver {
 
     public ResolveResult resolve() {
         return ResolveResult.merge(
-                scanSwaggerFiles(context.getDefinitionPath())
+                SwaggerUtils.scanModels(context.getDefinitionPath())
                         .stream()
-                        .map(SwaggerUtils::toSwagger)
                         .map(this::resolve)
                         .filter(Objects::nonNull)
                         .collect(Collectors.toList())
@@ -220,7 +219,7 @@ public class SwaggerResolver implements IResolver {
         dto.setDescription(description);
         // 自定义注解
         dto.getAnnotations().add(parseAnnotations(vendorExtensions));
-        dto.getImports().add(SwaggerVendorExtensions.getImports(vendorExtensions));
+        dto.getImports().add(getImports(vendorExtensions));
         // 属性
         AtomicInteger index = new AtomicInteger();
         List<Field> preProcessedFields = Optional.ofNullable(properties)
@@ -241,12 +240,10 @@ public class SwaggerResolver implements IResolver {
                         return multiFields.get(0);
                     }
                     String fieldName = entry.getKey();
-                    Field field = multiFields.stream().sorted(Field.COMPARATOR).collect(Collectors.toList())
-                            .get(0);
+                    Field field = multiFields.stream().sorted(Field.COMPARATOR).collect(Collectors.toList()).get(0);
                     List<String> aliasValues = multiFields
                             .stream()
-                            .flatMap(f -> Optional.ofNullable(f.getAliasValues()).map(List::stream)
-                                    .orElse(Stream.empty()))
+                            .flatMap(f -> Optional.ofNullable(f.getAliasValues()).map(List::stream).orElse(Stream.empty()))
                             .filter(f -> !ObjectUtils.isEmpty(f))
                             .filter(alias -> !fieldName.equals(alias))
                             .distinct()
@@ -381,7 +378,7 @@ public class SwaggerResolver implements IResolver {
                     );
 
                     handlerClass.getFeignClientAnnotations().add(
-                            SpringAnnotations.FeignClient(SwaggerVendorExtensions.getFeignClientName(tag.getVendorExtensions())),
+                            SpringAnnotations.FeignClient(getFeignClientName(tag.getVendorExtensions())),
                             SpringAnnotations.Validated()
                     );
 
@@ -615,24 +612,6 @@ public class SwaggerResolver implements IResolver {
             throw new RuntimeException("resp返回值只支持 $ref | type | List<$ref> |List<type> ");
         }
         return handlerMethodReturn;
-    }
-
-    /**
-     * 扫描swagger文件
-     *
-     * @param swaggerApiDirPath swagger文件目录
-     * @return swagger files
-     */
-    @SneakyThrows
-    private List<File> scanSwaggerFiles(String swaggerApiDirPath) {
-        List<File> swaggerFiles = FileUtil.parse(swaggerApiDirPath)
-                .stream()
-                .filter(file -> file.getName().endsWith(".yaml") || file.getName().endsWith(".yml"))
-                .collect(Collectors.toList());
-        if (ObjectUtils.isEmpty(swaggerFiles)) {
-            throw new RuntimeException("没有找到swagger定义文档");
-        }
-        return swaggerFiles;
     }
 
 }

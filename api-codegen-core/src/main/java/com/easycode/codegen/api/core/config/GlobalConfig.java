@@ -18,7 +18,6 @@ public class GlobalConfig {
 
     /**
      * swagger文档目录 @后续使用definitionPath
-     *
      */
     @Deprecated
     private String apiDefineDirPath;
@@ -64,5 +63,7 @@ public class GlobalConfig {
     private CustomConfig custom;
 
     private Plugins plugins;
+
+    private FormatConfig sourceToJson;
 
 }

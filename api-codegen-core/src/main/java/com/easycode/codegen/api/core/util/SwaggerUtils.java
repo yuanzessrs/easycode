@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.easycode.codegen.api.core.util.SwaggerVendorExtensions.getXDefault;
 
@@ -56,6 +57,13 @@ public class SwaggerUtils {
         File[] swaggerFiles = apiResourceDir.listFiles((file, name) -> name.endsWith(".yaml") || name.endsWith(".yml"));
         Objects.requireNonNull(swaggerFiles, "没有找到swagger定义文档");
         return Arrays.asList(swaggerFiles);
+    }
+
+    public static List<Swagger> scanModels(String swaggerApiDirPath){
+        return  SwaggerUtils.scan(swaggerApiDirPath)
+                .stream()
+                .map(SwaggerUtils::toSwagger)
+                .collect(Collectors.toList());
     }
 
     public static Swagger parseSwagger(String content) {
