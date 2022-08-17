@@ -1,7 +1,9 @@
 package com.easycode.codegen.utils;
 
-import java.lang.reflect.Field;
 import lombok.extern.slf4j.Slf4j;
+
+import java.lang.reflect.Field;
+import java.util.Arrays;
 
 /**
  * @ClassName: ClassUtils
@@ -31,6 +33,16 @@ public class ClassUtils {
             log.warn("查找field失败,targetClass:{},fieldName:{}", target.getClass().getName(), fieldName);
             return null;
         }
+    }
+
+    public static boolean hasField(Object target, String fieldName) {
+        try {
+            Field[] fields = target.getClass().getDeclaredFields();
+            return Arrays.stream(fields).anyMatch(field -> field.getName().equals(fieldName));
+        } catch (Exception ignore) {
+
+        }
+        return false;
     }
 
 }

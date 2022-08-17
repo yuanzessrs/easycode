@@ -59,8 +59,8 @@ public class SwaggerUtils {
         return Arrays.asList(swaggerFiles);
     }
 
-    public static List<Swagger> scanModels(String swaggerApiDirPath){
-        return  SwaggerUtils.scan(swaggerApiDirPath)
+    public static List<Swagger> scanModels(String swaggerApiDirPath) {
+        return SwaggerUtils.scan(swaggerApiDirPath)
                 .stream()
                 .map(SwaggerUtils::toSwagger)
                 .collect(Collectors.toList());
@@ -101,12 +101,18 @@ public class SwaggerUtils {
      * @return 默认值
      */
     public static String getPropertyDefaultValue(Property property) {
+        if (!ClassUtils.hasField(property, SwaggerConstants.DEFAULT_VALUE_FIELD)) {
+            return null;
+        }
         return Optional.ofNullable(ClassUtils.getValue(property, SwaggerConstants.DEFAULT_VALUE_FIELD))
                 .map(Object::toString)
                 .orElse(null);
     }
 
     public static String getPropertyDefaultValue(Schema<?> property) {
+        if (!ClassUtils.hasField(property, SwaggerConstants.DEFAULT_VALUE_FIELD)) {
+            return null;
+        }
         return Optional.ofNullable(ClassUtils.getValue(property, SwaggerConstants.DEFAULT_VALUE_FIELD))
                 .map(Object::toString)
                 .orElseGet(() -> getXDefault(property.getExtensions()));
