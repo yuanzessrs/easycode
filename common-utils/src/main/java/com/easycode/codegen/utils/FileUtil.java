@@ -1,4 +1,4 @@
-package com.easycode.codegen.api.core.util;
+package com.easycode.codegen.utils;
 
 import java.io.File;
 import java.util.Arrays;

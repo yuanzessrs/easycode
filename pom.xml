@@ -14,6 +14,7 @@
         <module>maven-plugin-sql-codegen</module>
         <module>maven-plugin-dependence-mgmt</module>
         <module>common-utils</module>
+        <module>clojure-codegen</module>
     </modules>
 
     <properties>

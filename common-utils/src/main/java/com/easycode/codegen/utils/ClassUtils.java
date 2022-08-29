@@ -1,8 +1,11 @@
 package com.easycode.codegen.utils;
 
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 /**
@@ -44,5 +47,14 @@ public class ClassUtils {
         }
         return false;
     }
+
+    @SneakyThrows
+    public static void javac(String path) {
+        Process process = Runtime.getRuntime().exec("javac -cp " + "/Users/didi/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.13.2/jackson-annotations-2.13.2.jar:/Users/didi/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.13.2.2/jackson-databind-2.13.2.2.jar:/Users/didi/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.13.2/jackson-core-2.13.2.jar:/Users/didi/.m2/repository/org/projectlombok/lombok/1.18.16/lombok-1.18.16.jar " + path);
+        System.out.println(IOUtils.toString(process.getErrorStream(), StandardCharsets.UTF_8));
+        int exitVal = process.waitFor();
+        System.out.println("Process exitValue: " + exitVal);
+    }
+
 
 }
