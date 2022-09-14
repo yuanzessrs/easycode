@@ -2,9 +2,9 @@ package com.easycode.codegen.api.core.resolver.impl;
 
 import com.easycode.codegen.api.core.constants.SwaggerConstants;
 import com.easycode.codegen.api.core.enums.TypeMapping;
-import com.easycode.codegen.api.core.meta.ResolveResult;
-import com.easycode.codegen.api.core.meta.Dto;
-import com.easycode.codegen.api.core.meta.HandlerClass;
+import com.easycode.codegen.api.core.output.ResolveResult;
+import com.easycode.codegen.api.core.output.Dto;
+import com.easycode.codegen.api.core.output.HandlerClass;
 import com.easycode.codegen.api.core.resolver.IResolver;
 import com.easycode.codegen.api.core.resolver.ResolverContext;
 import com.easycode.codegen.api.core.util.AnnotationUtils;

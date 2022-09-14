@@ -1,9 +1,8 @@
 package com.easycode.codegen.api.core.output;
 
-import com.easycode.codegen.api.core.config.GlobalConfig;
-import com.easycode.codegen.api.core.config.PathWrapper;
+import com.easycode.codegen.api.core.input.GlobalConfig;
+import com.easycode.codegen.api.core.input.PathWrapper;
 import com.easycode.codegen.api.core.enums.GenerateType;
-import com.easycode.codegen.api.core.meta.ResolveResult;
 import com.easycode.codegen.utils.EnumUtils;
 import com.easycode.codegen.utils.VelocityUtils;
 import lombok.extern.slf4j.Slf4j;

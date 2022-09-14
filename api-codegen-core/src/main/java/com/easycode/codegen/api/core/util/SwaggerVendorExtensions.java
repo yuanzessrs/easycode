@@ -1,7 +1,7 @@
 package com.easycode.codegen.api.core.util;
 
 import com.easycode.codegen.api.core.constants.GlobalConstants;
-import com.easycode.codegen.api.core.meta.AnnotationDefinition;
+import com.easycode.codegen.api.core.output.AnnotationDefinition;
 import org.springframework.util.ObjectUtils;
 
 import java.util.*;

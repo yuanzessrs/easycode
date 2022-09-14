@@ -1,4 +1,4 @@
-package com.easycode.codegen.api.core.config;
+package com.easycode.codegen.api.core.input;
 
 import java.io.File;
 import java.util.Optional;

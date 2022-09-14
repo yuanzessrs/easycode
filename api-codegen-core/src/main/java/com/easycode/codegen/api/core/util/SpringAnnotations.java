@@ -1,6 +1,6 @@
 package com.easycode.codegen.api.core.util;
 
-import com.easycode.codegen.api.core.meta.AnnotationDefinition;
+import com.easycode.codegen.api.core.output.AnnotationDefinition;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.util.ObjectUtils;

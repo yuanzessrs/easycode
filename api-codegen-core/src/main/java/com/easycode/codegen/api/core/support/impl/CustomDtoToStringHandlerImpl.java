@@ -1,11 +1,10 @@
 package com.easycode.codegen.api.core.support.impl;
 
-import com.easycode.codegen.api.core.config.CustomConfig;
-import com.easycode.codegen.api.core.config.GlobalConfig;
+import com.easycode.codegen.api.core.input.CodegenCustom;
+import com.easycode.codegen.api.core.input.GlobalConfig;
 import com.easycode.codegen.api.core.constants.GlobalConstants;
-import com.easycode.codegen.api.core.constants.SwaggerConstants;
-import com.easycode.codegen.api.core.meta.ResolveResult;
-import com.easycode.codegen.api.core.meta.Dto;
+import com.easycode.codegen.api.core.output.ResolveResult;
+import com.easycode.codegen.api.core.output.Dto;
 import com.easycode.codegen.api.core.support.IExtendHandler;
 import com.easycode.codegen.api.core.util.AnnotationUtils;
 import org.springframework.util.ObjectUtils;
@@ -23,7 +22,7 @@ public class CustomDtoToStringHandlerImpl implements IExtendHandler {
 
     @Override
     public void handle(GlobalConfig config, ResolveResult resolveResult) {
-        Optional.ofNullable(config).map(GlobalConfig::getCustom).map(CustomConfig::getDto).map(CustomConfig.DTO::getToString).ifPresent(ts -> {
+        Optional.ofNullable(config).map(GlobalConfig::getCustom).map(CodegenCustom::getDto).map(CodegenCustom.DTO::getToString).ifPresent(ts -> {
             List<Dto> dtos = Optional.ofNullable(resolveResult).map(ResolveResult::getDtos).orElse(Collections.emptyList());
             // custom toString
             Optional.ofNullable(ts.getCustom()).ifPresent(custom -> dtos.forEach((dto) -> {

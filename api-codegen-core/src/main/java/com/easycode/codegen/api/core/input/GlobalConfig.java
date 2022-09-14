@@ -1,4 +1,4 @@
-package com.easycode.codegen.api.core.config;
+package com.easycode.codegen.api.core.input;
 
 import lombok.Data;
 
@@ -60,10 +60,13 @@ public class GlobalConfig {
      */
     private String feignClientPackageName = "clients";
 
-    private CustomConfig custom;
+    private CodegenCustom custom;
 
     private Plugins plugins;
 
-    private FormatConfig sourceToJson;
+    @Deprecated
+    private SwaggerOption.YamlToJsonConfig sourceToJson;
+
+    private SwaggerOption swaggerOption;
 
 }

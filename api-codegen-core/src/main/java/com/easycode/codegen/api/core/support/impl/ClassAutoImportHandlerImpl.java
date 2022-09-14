@@ -1,10 +1,10 @@
 package com.easycode.codegen.api.core.support.impl;
 
-import com.easycode.codegen.api.core.config.CustomConfig;
-import com.easycode.codegen.api.core.config.GlobalConfig;
-import com.easycode.codegen.api.core.meta.AnnotationDefinition;
-import com.easycode.codegen.api.core.meta.Dto;
-import com.easycode.codegen.api.core.meta.ResolveResult;
+import com.easycode.codegen.api.core.input.CodegenCustom;
+import com.easycode.codegen.api.core.input.GlobalConfig;
+import com.easycode.codegen.api.core.output.AnnotationDefinition;
+import com.easycode.codegen.api.core.output.Dto;
+import com.easycode.codegen.api.core.output.ResolveResult;
 import com.easycode.codegen.api.core.support.IExtendHandler;
 
 import java.util.Collections;
@@ -22,7 +22,7 @@ public class ClassAutoImportHandlerImpl implements IExtendHandler {
 
     @Override
     public void handle(GlobalConfig config, ResolveResult resolveResult) {
-        Optional.ofNullable(config.getCustom()).map(CustomConfig::getAutoImport).ifPresent(autoImport -> {
+        Optional.ofNullable(config.getCustom()).map(CodegenCustom::getAutoImport).ifPresent(autoImport -> {
             Map<String, String> mappings = Optional.ofNullable(autoImport.getMappings()).orElse(Collections.emptyMap());
 
             Consumer<AnnotationDefinition> annotationAutoImportProcessor = annotationDefinition -> {

@@ -1,4 +1,4 @@
-package com.easycode.codegen.api.core.config;
+package com.easycode.codegen.api.core.input;
 
 import lombok.Data;
 
@@ -6,13 +6,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @class-name: CustomConfig
+ * @class-name: CodegenCustom
  * @description:
  * @author: Mr.Zeng
  * @date: 2022-01-03 13:21
  */
 @Data
-public class CustomConfig {
+public class CodegenCustom {
 
     private AutoImport autoImport;
 

@@ -1,6 +1,6 @@
 package com.easycode.codegen.api.core.resolver;
 
-import com.easycode.codegen.api.core.meta.ResolveResult;
+import com.easycode.codegen.api.core.output.ResolveResult;
 
 /**
  * @interface-name: IResolver

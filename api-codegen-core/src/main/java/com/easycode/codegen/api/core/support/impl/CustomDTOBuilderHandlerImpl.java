@@ -1,9 +1,9 @@
 package com.easycode.codegen.api.core.support.impl;
 
-import com.easycode.codegen.api.core.config.CustomConfig;
-import com.easycode.codegen.api.core.config.GlobalConfig;
-import com.easycode.codegen.api.core.meta.ResolveResult;
-import com.easycode.codegen.api.core.meta.Dto;
+import com.easycode.codegen.api.core.input.CodegenCustom;
+import com.easycode.codegen.api.core.input.GlobalConfig;
+import com.easycode.codegen.api.core.output.ResolveResult;
+import com.easycode.codegen.api.core.output.Dto;
 import com.easycode.codegen.api.core.support.IExtendHandler;
 import com.easycode.codegen.api.core.util.AnnotationUtils;
 
@@ -21,7 +21,7 @@ public class CustomDTOBuilderHandlerImpl implements IExtendHandler {
 
     @Override
     public void handle(GlobalConfig config, ResolveResult resolveResult) {
-        Optional.ofNullable(config).map(GlobalConfig::getCustom).map(CustomConfig::getDto).map(CustomConfig.DTO::getBuilder).ifPresent(builder -> {
+        Optional.ofNullable(config).map(GlobalConfig::getCustom).map(CodegenCustom::getDto).map(CodegenCustom.DTO::getBuilder).ifPresent(builder -> {
             List<Dto> dtos = Optional.ofNullable(resolveResult).map(ResolveResult::getDtos).orElse(Collections.emptyList());
             Optional.ofNullable(builder.getLombok()).ifPresent(lombok -> dtos.forEach(dto -> {
                 dto.getAnnotations().add(AnnotationUtils.lombokBuilder());

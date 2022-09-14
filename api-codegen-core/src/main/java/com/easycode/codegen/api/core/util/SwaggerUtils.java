@@ -1,5 +1,6 @@
 package com.easycode.codegen.api.core.util;
 
+import com.easycode.codegen.api.core.beans.SwaggerResource;
 import com.easycode.codegen.api.core.constants.SwaggerConstants;
 import com.easycode.codegen.utils.ClassUtils;
 import com.easycode.codegen.utils.FormatUtils;
@@ -63,6 +64,13 @@ public class SwaggerUtils {
         return SwaggerUtils.scan(swaggerApiDirPath)
                 .stream()
                 .map(SwaggerUtils::toSwagger)
+                .collect(Collectors.toList());
+    }
+
+    public static List<SwaggerResource> scanResources(String swaggerApiDirPath) {
+        return SwaggerUtils.scan(swaggerApiDirPath)
+                .stream()
+                .map(file -> new SwaggerResource(SwaggerUtils.toSwagger(file), file))
                 .collect(Collectors.toList());
     }
 

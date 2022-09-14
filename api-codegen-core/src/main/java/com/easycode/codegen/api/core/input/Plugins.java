@@ -1,6 +1,6 @@
-package com.easycode.codegen.api.core.config;
+package com.easycode.codegen.api.core.input;
 
-import com.easycode.codegen.api.core.config.plugin.DtoStringFieldCheckPlugin;
+import com.easycode.codegen.api.core.input.plugin.DtoStringFieldCheckPlugin;
 import lombok.Data;
 
 /**

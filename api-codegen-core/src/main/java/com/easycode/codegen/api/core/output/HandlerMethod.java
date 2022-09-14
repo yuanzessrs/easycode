@@ -1,10 +1,10 @@
-package com.easycode.codegen.api.core.meta;
+package com.easycode.codegen.api.core.output;
 
 import com.easycode.codegen.api.core.constants.HandlerMethodParamTag;
 import com.easycode.codegen.api.core.holders.DataHolder;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+
 import lombok.Data;
 
 /**

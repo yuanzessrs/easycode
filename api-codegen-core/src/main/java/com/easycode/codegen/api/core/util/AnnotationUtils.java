@@ -1,6 +1,6 @@
 package com.easycode.codegen.api.core.util;
 
-import com.easycode.codegen.api.core.meta.AnnotationDefinition;
+import com.easycode.codegen.api.core.output.AnnotationDefinition;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.easycode.codegen.api.core.meta;
+package com.easycode.codegen.api.core.output;
 
 import lombok.Data;
 

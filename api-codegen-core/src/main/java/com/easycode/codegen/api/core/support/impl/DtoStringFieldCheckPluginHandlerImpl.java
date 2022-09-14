@@ -1,13 +1,13 @@
 package com.easycode.codegen.api.core.support.impl;
 
-import com.easycode.codegen.api.core.config.Annotation;
-import com.easycode.codegen.api.core.config.GlobalConfig;
-import com.easycode.codegen.api.core.config.Plugins;
+import com.easycode.codegen.api.core.input.Annotation;
+import com.easycode.codegen.api.core.input.GlobalConfig;
+import com.easycode.codegen.api.core.input.Plugins;
 import com.easycode.codegen.api.core.constants.GlobalConstants;
-import com.easycode.codegen.api.core.meta.AnnotationDefinition;
-import com.easycode.codegen.api.core.meta.Dto;
-import com.easycode.codegen.api.core.meta.HandlerMethod;
-import com.easycode.codegen.api.core.meta.ResolveResult;
+import com.easycode.codegen.api.core.output.AnnotationDefinition;
+import com.easycode.codegen.api.core.output.Dto;
+import com.easycode.codegen.api.core.output.HandlerMethod;
+import com.easycode.codegen.api.core.output.ResolveResult;
 import com.easycode.codegen.api.core.support.IExtendHandler;
 import org.springframework.util.CollectionUtils;
 

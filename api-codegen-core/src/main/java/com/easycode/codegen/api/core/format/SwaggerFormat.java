@@ -1,6 +1,9 @@
 package com.easycode.codegen.api.core.format;
 
-import com.easycode.codegen.api.core.config.GlobalConfig;
+import com.easycode.codegen.api.core.beans.SwaggerResource;
+import com.easycode.codegen.api.core.input.GlobalConfig;
+import com.easycode.codegen.api.core.input.SwaggerOption;
+import com.easycode.codegen.api.core.input.SwaggerOption.YamlToJsonConfig;
 import com.easycode.codegen.api.core.util.SwaggerUtils;
 import io.swagger.models.Path;
 import io.swagger.models.Swagger;
@@ -24,64 +27,66 @@ public class SwaggerFormat {
 
     public static void run(GlobalConfig config) {
         Optional.ofNullable(config.getSourceToJson()).ifPresent(sourceToJson -> {
-            Optional.ofNullable(sourceToJson.getEnabled()).filter(Boolean.TRUE::equals).ifPresent(o -> {
-                Map<Swagger, File> swaggerFileMap = new HashMap<>();
-                List<Swagger> swaggers = SwaggerUtils.scan(config.getDefinitionPath())
-                        .stream()
-                        .map(file -> {
-                            Swagger swagger = SwaggerUtils.toSwagger(file);
-                            swaggerFileMap.put(swagger, file);
-                            return swagger;
-                        }).collect(Collectors.toList());
+            yamlToJson(SwaggerUtils.scanResources(config.getDefinitionPath()), sourceToJson);
+        });
+        Optional.ofNullable(config.getSwaggerOption()).map(SwaggerOption::getYamlToJson).ifPresent(sourceToJson -> {
+            yamlToJson(SwaggerUtils.scanResources(config.getDefinitionPath()), sourceToJson);
+        });
+    }
 
-
-                Optional.ofNullable(sourceToJson.getPath()).ifPresent(path -> {
-                    Optional.ofNullable(path.getReplace()).ifPresent(replace -> {
-                        if (ObjectUtils.isEmpty(replace.getSource()) || ObjectUtils.isEmpty(replace.getTarget())) {
-                            throw new RuntimeException("source|target of source-to-json/path/replace must have a value");
-                        }
-                        swaggers.forEach(swagger -> {
-                            Map<String, Path> processedPaths = new HashMap<>();
-                            swagger.getPaths().forEach((name, val) -> {
-                                name = name.replace(replace.getSource(), replace.getTarget());
-                                processedPaths.put(name, val);
-                            });
-                            swagger.getPaths().clear();
-                            swagger.getPaths().putAll(processedPaths);
+    private static void yamlToJson(List<SwaggerResource> swaggerResources, YamlToJsonConfig sourceToJson) {
+        Optional.ofNullable(sourceToJson.getEnabled()).filter(Boolean.TRUE::equals).ifPresent(o -> {
+            Map<Swagger, File> swaggerFileMap = swaggerResources.stream()
+                    .collect(Collectors.toMap(SwaggerResource::getModel, SwaggerResource::getFile));
+            List<Swagger> swaggers = swaggerResources.stream()
+                    .map(SwaggerResource::getModel)
+                    .collect(Collectors.toList());
+            Optional.ofNullable(sourceToJson.getPath()).ifPresent(path -> {
+                Optional.ofNullable(path.getReplace()).ifPresent(replace -> {
+                    if (ObjectUtils.isEmpty(replace.getSource()) || ObjectUtils.isEmpty(replace.getTarget())) {
+                        throw new RuntimeException("source|target of source-to-json/path/replace must have a value");
+                    }
+                    swaggers.forEach(swagger -> {
+                        Map<String, Path> processedPaths = new HashMap<>();
+                        swagger.getPaths().forEach((name, val) -> {
+                            name = name.replace(replace.getSource(), replace.getTarget());
+                            processedPaths.put(name, val);
                         });
-
+                        swagger.getPaths().clear();
+                        swagger.getPaths().putAll(processedPaths);
                     });
+
                 });
-                Optional.ofNullable(sourceToJson.getParam()).ifPresent(param -> {
-                    Optional.ofNullable(param.getFilter()).ifPresent(filter -> {
-                        Set<String> nameSelector = Optional.ofNullable(filter.getNameSelector())
-                                .map(HashSet::new)
-                                .orElseGet(HashSet::new);
-                        if (!ObjectUtils.isEmpty(nameSelector)) {
-                            swaggers.forEach(swagger -> {
-                                Optional.ofNullable(swagger.getParameters())
-                                        .ifPresent(parameters -> nameSelector.forEach(parameters::remove));
-                                swagger.getPaths().forEach((k, v) -> {
-                                    v.getOperationMap().forEach((opName, op) -> {
-                                        op.getParameters().removeIf(parameter -> nameSelector.contains(parameter.getName()));
-                                    });
+            });
+            Optional.ofNullable(sourceToJson.getParam()).ifPresent(param -> {
+                Optional.ofNullable(param.getFilter()).ifPresent(filter -> {
+                    Set<String> nameSelector = Optional.ofNullable(filter.getNameSelector())
+                            .map(HashSet::new)
+                            .orElseGet(HashSet::new);
+                    if (!ObjectUtils.isEmpty(nameSelector)) {
+                        swaggers.forEach(swagger -> {
+                            Optional.ofNullable(swagger.getParameters())
+                                    .ifPresent(parameters -> nameSelector.forEach(parameters::remove));
+                            swagger.getPaths().forEach((k, v) -> {
+                                v.getOperationMap().forEach((opName, op) -> {
+                                    op.getParameters().removeIf(parameter -> nameSelector.contains(parameter.getName()));
                                 });
                             });
-                        }
-
-                    });
-                });
-
-                swaggerFileMap.forEach(((swagger, file) -> {
-                    File jsonFile = createJsonFileByYamlFile(file, sourceToJson.getOutputPath());
-                    try {
-                        FileUtils.writeStringToFile(jsonFile, Json.pretty(swagger), StandardCharsets.UTF_8);
-                    } catch (IOException e) {
-                        throw new RuntimeException("write json-file fail. yaml-file: " + file.getAbsolutePath() + "  json-file: " + jsonFile.getAbsolutePath());
+                        });
                     }
-                }));
 
+                });
             });
+
+            swaggerFileMap.forEach(((swagger, file) -> {
+                File jsonFile = createJsonFileByYamlFile(file, sourceToJson.getOutputPath());
+                try {
+                    FileUtils.writeStringToFile(jsonFile, Json.pretty(swagger), StandardCharsets.UTF_8);
+                } catch (IOException e) {
+                    throw new RuntimeException("write json-file fail. yaml-file: " + file.getAbsolutePath() + "  json-file: " + jsonFile.getAbsolutePath());
+                }
+            }));
+
         });
     }
 

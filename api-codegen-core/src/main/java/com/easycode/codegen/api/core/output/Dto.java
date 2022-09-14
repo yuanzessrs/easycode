@@ -1,4 +1,4 @@
-package com.easycode.codegen.api.core.meta;
+package com.easycode.codegen.api.core.output;
 
 import com.easycode.codegen.api.core.holders.DataHolder;
 import com.easycode.codegen.utils.FormatUtils;

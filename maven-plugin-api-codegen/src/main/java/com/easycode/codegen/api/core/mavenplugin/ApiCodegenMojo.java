@@ -1,7 +1,7 @@
 package com.easycode.codegen.api.core.mavenplugin;
 
 import com.easycode.codegen.api.core.ApiCodegenRunner;
-import com.easycode.codegen.api.core.config.GlobalConfig;
+import com.easycode.codegen.api.core.input.GlobalConfig;
 import com.easycode.codegen.utils.Methods;
 import lombok.SneakyThrows;
 import org.apache.maven.execution.MavenSession;

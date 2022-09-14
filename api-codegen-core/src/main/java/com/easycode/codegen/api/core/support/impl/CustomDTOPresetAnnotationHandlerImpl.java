@@ -1,10 +1,10 @@
 package com.easycode.codegen.api.core.support.impl;
 
-import com.easycode.codegen.api.core.config.CustomConfig;
-import com.easycode.codegen.api.core.config.GlobalConfig;
-import com.easycode.codegen.api.core.meta.AnnotationDefinition;
-import com.easycode.codegen.api.core.meta.Dto;
-import com.easycode.codegen.api.core.meta.ResolveResult;
+import com.easycode.codegen.api.core.input.CodegenCustom;
+import com.easycode.codegen.api.core.input.GlobalConfig;
+import com.easycode.codegen.api.core.output.AnnotationDefinition;
+import com.easycode.codegen.api.core.output.Dto;
+import com.easycode.codegen.api.core.output.ResolveResult;
 import com.easycode.codegen.api.core.support.IExtendHandler;
 import org.springframework.util.ObjectUtils;
 
@@ -23,7 +23,7 @@ public class CustomDTOPresetAnnotationHandlerImpl implements IExtendHandler {
 
     @Override
     public void handle(GlobalConfig config, ResolveResult resolveResult) {
-        Optional.ofNullable(config).map(GlobalConfig::getCustom).map(CustomConfig::getDto).map(CustomConfig.DTO::getPresetAnnotations).ifPresent(presetAnnotations -> {
+        Optional.ofNullable(config).map(GlobalConfig::getCustom).map(CodegenCustom::getDto).map(CodegenCustom.DTO::getPresetAnnotations).ifPresent(presetAnnotations -> {
             List<Dto> dtos = Optional.ofNullable(resolveResult).map(ResolveResult::getDtos).orElse(Collections.emptyList());
             List<AnnotationDefinition> annotationDefinitions = presetAnnotations.stream().map(annotation -> {
                 AnnotationDefinition annotationDefinition = new AnnotationDefinition();

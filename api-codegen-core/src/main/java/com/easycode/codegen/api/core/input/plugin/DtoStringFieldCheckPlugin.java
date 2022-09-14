@@ -1,6 +1,6 @@
-package com.easycode.codegen.api.core.config.plugin;
+package com.easycode.codegen.api.core.input.plugin;
 
-import com.easycode.codegen.api.core.config.Annotation;
+import com.easycode.codegen.api.core.input.Annotation;
 import lombok.Data;
 
 import java.util.List;

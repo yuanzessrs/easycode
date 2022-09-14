@@ -1,7 +1,7 @@
 package com.easycode.codegen.api.core.support;
 
-import com.easycode.codegen.api.core.config.GlobalConfig;
-import com.easycode.codegen.api.core.meta.ResolveResult;
+import com.easycode.codegen.api.core.input.GlobalConfig;
+import com.easycode.codegen.api.core.output.ResolveResult;
 import com.easycode.codegen.api.core.support.impl.*;
 
 import java.util.ArrayList;

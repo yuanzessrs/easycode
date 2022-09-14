@@ -1,4 +1,4 @@
-package com.easycode.codegen.api.core.meta;
+package com.easycode.codegen.api.core.output;
 
 import java.util.List;
 import java.util.stream.Collectors;
