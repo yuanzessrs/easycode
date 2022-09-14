@@ -564,10 +564,9 @@ public class SwaggerResolver implements IResolver {
      * @return return对象
      */
     private HandlerMethod.Return getHandlerMethodReturn(Operation op) {
-        Response resp = op.getResponses().values()
-                .stream()
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("接口定义需要有一个唯一的返回声明!"));
+        Response resp = Optional.ofNullable(op.getResponses())
+                .map(responses->responses.get("200"))
+                .orElseThrow(() -> new RuntimeException("接口定义需要有一个200的返回声明!"));
         HandlerMethod.Return handlerMethodReturn = new HandlerMethod.Return();
         handlerMethodReturn.setDescription(resp.getDescription());
         Model model = resp.getResponseSchema();
