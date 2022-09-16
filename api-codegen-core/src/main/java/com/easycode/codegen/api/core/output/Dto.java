@@ -31,6 +31,10 @@ public class Dto implements Importable {
 
     private Boolean hasBuilder = Boolean.FALSE;
 
+    private Boolean hideGetFiledMethod = Boolean.FALSE;
+
+    private Boolean hideSetFiledMethod = Boolean.FALSE;
+
     private final DataHolder<String> imports = new DataHolder<>();
 
     private final DataHolder<AnnotationDefinition> annotations = new DataHolder<>();
@@ -47,7 +51,7 @@ public class Dto implements Importable {
                     .forEach(annotation -> externalImports.addAll(annotation.getImports().get()));
         });
         annotations.get().forEach(annotation -> externalImports.addAll(annotation.getImports().get()));
-        return externalImports.stream().distinct().collect(Collectors.toList());
+        return externalImports.stream().filter(Objects::nonNull).distinct().collect(Collectors.toList());
     }
 
     public List<Dto> getInnerDtos() {

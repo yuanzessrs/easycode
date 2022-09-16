@@ -25,15 +25,19 @@ public class ${definition.name} {
 #end
 #if(!$field.hasBuidler)
 #foreach($field in $definition.fields)
+#if(!$definition.hideGetFiledMethod)
 
     public ${field.type} get${field.upperCamelCaseName()}() {
         return ${field.name};
     }
+#end
 #if($field.readOnly==false)
+#if(!$definition.hideSetFiledMethod)
 
     public void set${field.upperCamelCaseName()}(${field.type} ${field.name}) {
         this.${field.name} = ${field.name};
     }
+#end
 #end#end
 #end
 #if(${definition.overrideToString})
@@ -62,15 +66,19 @@ public class ${definition.name} {
         #end
 #if(!$field.hasBuidler)
         #foreach($field in $definition.fields)
+#if(!$definition.hideGetFiledMethod)
 
         public ${field.type} get${field.upperCamelCaseName()}() {
         return ${field.name};
         }
+#end
     #if($field.readOnly==false)
+#if(!$definition.hideSetFiledMethod)
 
         public void set${field.upperCamelCaseName()}(${field.type} ${field.name}) {
         this.${field.name} = ${field.name};
         }
+#end
     #end#end
 #end
 #foreach($definition in $definition.getInnerDtos())

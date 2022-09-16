@@ -1,7 +1,11 @@
 package com.easycode.codegen.api.core.resolver;
 
+import com.easycode.codegen.api.core.input.Option;
+import com.easycode.codegen.api.core.input.SwaggerOption;
 import lombok.Builder;
 import lombok.Getter;
+
+import java.util.List;
 
 /**
  * @class-name: SwaggerResolverContext
@@ -14,5 +18,13 @@ import lombok.Getter;
 public class ResolverContext {
 
     private String definitionPath;
+
+    private String definitionUrl;
+
+    private List<String> definitionUrls;
+
+    private Option options;
+
+    private SwaggerOption swaggerOption;
 
 }

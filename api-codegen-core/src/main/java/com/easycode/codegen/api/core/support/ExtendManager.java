@@ -18,7 +18,9 @@ public class ExtendManager {
     private static final List<IExtendHandler> EXTEND_HANDLERS = new ArrayList<>();
 
     static {
-        EXTEND_HANDLERS.add(new CustomDtoToStringHandlerImpl());
+        EXTEND_HANDLERS.add(new CustomDTOFiledHandlerImpl());
+        EXTEND_HANDLERS.add(new CustomDTOHandlerImpl());
+        EXTEND_HANDLERS.add(new CustomDTOToStringHandlerImpl());
         EXTEND_HANDLERS.add(new CustomDTOBuilderHandlerImpl());
         EXTEND_HANDLERS.add(new CustomDTOPresetAnnotationHandlerImpl());
         EXTEND_HANDLERS.add(new ClassAutoImportHandlerImpl());

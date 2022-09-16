@@ -13,12 +13,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * @class-name: CustomDtoToStringHandlerImpl
+ * @class-name: CustomDTOToStringHandlerImpl
  * @description:
  * @author: Mr.Zeng
  * @date: 2022-08-13 20:43
  */
-public class CustomDtoToStringHandlerImpl implements IExtendHandler {
+public class CustomDTOToStringHandlerImpl implements IExtendHandler {
 
     @Override
     public void handle(GlobalConfig config, ResolveResult resolveResult) {

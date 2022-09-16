@@ -1,7 +1,8 @@
 package com.easycode.codegen.api.core;
 
-import com.easycode.codegen.api.core.input.GlobalConfig;
+import com.easycode.codegen.api.core.components.SwaggerTypeConvertor;
 import com.easycode.codegen.api.core.format.SwaggerFormat;
+import com.easycode.codegen.api.core.input.GlobalConfig;
 import com.easycode.codegen.api.core.output.ResolveResult;
 import com.easycode.codegen.api.core.output.SwaggerOutput;
 import com.easycode.codegen.api.core.resolver.ResolverContext;
@@ -24,11 +25,18 @@ public class ApiCodegenRunner {
      * @param config 全局配置
      */
     public void start(GlobalConfig config) {
-        ResolverContext context = ResolverContext.builder().definitionPath(config.getDefinitionPath()).build();
+        ResolverContext context = ResolverContext.builder()
+                .definitionPath(config.getDefinitionPath())
+                .definitionUrls(config.getDefinitionUrls())
+                .options(config.getOptions())
+                .swaggerOption(config.getSwaggerOption())
+                .build();
         ResolveResult resolveResult = new SwaggerResolver(context).resolve();
         ExtendManager.handle(config, resolveResult);
         SwaggerOutput.run(config, resolveResult);
         SwaggerFormat.run(config);
     }
+
+
 
 }

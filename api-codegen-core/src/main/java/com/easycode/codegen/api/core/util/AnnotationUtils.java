@@ -1,13 +1,15 @@
 package com.easycode.codegen.api.core.util;
 
 import com.easycode.codegen.api.core.output.AnnotationDefinition;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import org.springframework.util.CollectionUtils;
 
 /**
  * @ClassName: AnnotationUtils
@@ -17,10 +19,31 @@ import org.springframework.util.CollectionUtils;
  */
 public class AnnotationUtils {
 
+    public static AnnotationDefinition RequestParam(String name, String defaultValue, Boolean required) {
+        AnnotationDefinition annotation = new AnnotationDefinition();
+        annotation.setAnnotationName("RequestParam");
+        annotation.getImports().add("org.springframework.web.bind.annotation.RequestParam");
+        annotation.addProperty("name", name, true);
+        if (!ObjectUtils.isEmpty(defaultValue)) {
+            annotation.addProperty("defaultValue", defaultValue, true);
+        }
+        if (Boolean.FALSE.equals(required)) {
+            annotation.addProperty("required", "false", false);
+        }
+        return annotation;
+    }
+
     public static AnnotationDefinition lombokBuilder() {
         AnnotationDefinition annotation = new AnnotationDefinition();
         annotation.setAnnotationName("Builder");
         annotation.getImports().add("lombok.Builder");
+        return annotation;
+    }
+
+    public static AnnotationDefinition lombokSetter() {
+        AnnotationDefinition annotation = new AnnotationDefinition();
+        annotation.setAnnotationName("Setter");
+        annotation.getImports().add("lombok.Setter");
         return annotation;
     }
 

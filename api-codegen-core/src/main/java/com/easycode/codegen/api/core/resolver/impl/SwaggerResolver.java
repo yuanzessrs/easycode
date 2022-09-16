@@ -1,8 +1,11 @@
 package com.easycode.codegen.api.core.resolver.impl;
 
+import com.easycode.codegen.api.core.components.SwaggerTypeConvertor;
 import com.easycode.codegen.api.core.constants.HandlerMethodParamTag;
 import com.easycode.codegen.api.core.constants.SwaggerConstants;
-import com.easycode.codegen.api.core.enums.TypeMapping;
+import com.easycode.codegen.api.core.input.Option;
+import com.easycode.codegen.api.core.input.SwaggerOption;
+import com.easycode.codegen.api.core.input.SwaggerOption.Preprocess;
 import com.easycode.codegen.api.core.output.Dto;
 import com.easycode.codegen.api.core.output.Dto.Field;
 import com.easycode.codegen.api.core.output.HandlerClass;
@@ -17,16 +20,15 @@ import com.easycode.codegen.utils.FormatUtils;
 import com.easycode.codegen.utils.Methods;
 import io.swagger.models.*;
 import io.swagger.models.parameters.*;
-import io.swagger.models.properties.ArrayProperty;
-import io.swagger.models.properties.ObjectProperty;
-import io.swagger.models.properties.Property;
-import io.swagger.models.properties.RefProperty;
+import io.swagger.models.properties.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -43,19 +45,307 @@ import static com.easycode.codegen.api.core.util.SwaggerVendorExtensions.*;
 public class SwaggerResolver implements IResolver {
 
     private final ResolverContext context;
+    private final SwaggerTypeConvertor typeConvertor = new SwaggerTypeConvertor();
 
     public SwaggerResolver(ResolverContext context) {
         this.context = context;
+        this.init();
+    }
+
+    void init() {
+        Optional.ofNullable(context.getSwaggerOption()).map(SwaggerOption::getTypeMappings).ifPresent(typeMappings -> {
+            typeMappings.forEach(typeMapping -> {
+                typeConvertor.register(
+                        SwaggerTypeConvertor.Mapping.builder()
+                                .type(typeMapping.getSwaggerType())
+                                .format(typeMapping.getSwaggerFormat())
+                                .javaType(SwaggerTypeConvertor.JavaType.builder()
+                                        .type(typeMapping.getJavaType())
+                                        .subtype(typeMapping.getJavaSubtype())
+                                        .imports(Optional.ofNullable(typeMapping.getImports()).orElse(Collections.emptyList()))
+                                        .build())
+                                .build()
+                );
+            });
+        });
+
     }
 
     public ResolveResult resolve() {
         return ResolveResult.merge(
-                SwaggerUtils.scanModels(context.getDefinitionPath())
-                        .stream()
+                Stream.concat(
+                                SwaggerUtils.scanModelsByPath(context.getDefinitionPath()).stream(),
+                                SwaggerUtils.scanModelsByURLs(context.getDefinitionUrls()).stream()
+                        )
+                        .map(this::preprocessModel)
                         .map(this::resolve)
                         .filter(Objects::nonNull)
                         .collect(Collectors.toList())
         );
+    }
+
+    public Swagger preprocessModel(Swagger swagger) {
+        Optional.ofNullable(context.getSwaggerOption()).map(SwaggerOption::getPreprocess).ifPresent(preprocess -> {
+            Optional.ofNullable(preprocess.getTag()).ifPresent(tag -> preprocessTag(swagger, tag));
+            Optional.ofNullable(preprocess.getOperation()).ifPresent(val -> preprocessOperation(swagger, val));
+            Optional.ofNullable(preprocess.getRef()).ifPresent(ref -> preprocessRef(swagger, ref));
+            Optional.ofNullable(preprocess.getDefinition()).ifPresent(dto -> preprocessDefinition(swagger, dto));
+        });
+        return swagger;
+    }
+
+    public void preprocessTag(Swagger swagger, Preprocess.TagOption tagOption) {
+        if (tagOption.hashFilter()) {
+            if (tagOption.getIncludeFilter() != null) {
+                Set<String> nameFilter = Optional.ofNullable(tagOption.getIncludeFilter().getByNames()).orElse(Collections.emptySet());
+                swagger.getTags().removeIf(currentTag -> !nameFilter.contains(currentTag.getName()));
+
+                swagger.getPaths().forEach((url, path) -> {
+                    path.getOperationMap()
+                            .entrySet()
+                            .stream()
+                            .filter(entry -> entry.getValue().getTags().stream().noneMatch(nameFilter::contains))
+                            .map(Map.Entry::getKey)
+                            .forEach(httpMethod -> path.set(httpMethod.name().toLowerCase(), null));
+                });
+
+//                swagger.getPaths().forEach((url, path) -> {
+//                    path.getOperationMap().entrySet().removeIf(entry -> entry.getValue().getTags().stream().noneMatch(nameFilter::contains));
+//                });
+
+//                swagger.getPaths().entrySet().removeIf(entry -> entry.getValue().getOperationMap().isEmpty());
+
+
+            } else if (tagOption.getExcludeFilter() != null) {
+                Set<String> nameFilter = Optional.ofNullable(tagOption.getExcludeFilter().getByNames()).orElse(Collections.emptySet());
+                swagger.getTags().removeIf(currentTag -> nameFilter.contains(currentTag.getName()));
+                swagger.getPaths().forEach((url, path) -> {
+                    path.getOperationMap()
+                            .entrySet()
+                            .stream()
+                            .filter(entry -> entry.getValue().getTags().stream().anyMatch(nameFilter::contains))
+                            .map(Map.Entry::getKey)
+                            .forEach(httpMethod -> path.set(httpMethod.name().toLowerCase(), null));
+                });
+            }
+        }
+
+        Optional.ofNullable(tagOption.getAppendVendorExtensions()).ifPresent(appendVendorExtensions -> {
+            swagger.getTags().forEach(tag -> {
+                appendVendorExtensions.stream().filter(rule -> {
+                    return rule.enabledRegex() ? Pattern.matches(rule.getTagNamePattern(), tag.getName()) : tag.getName().equals(rule.getTagNamePattern());
+                }).findFirst().ifPresent(rule -> {
+                    tag.getVendorExtensions().putAll(rule.getVendorExtensions());
+                });
+            });
+        });
+
+        // tag rename
+        Optional.ofNullable(tagOption.getRenames()).ifPresent(renames -> {
+            Map<String, String> renameTagMap = new HashMap<>();
+            swagger.getTags().forEach(tag -> {
+                String originalTagName = tag.getName();
+                Optional<Preprocess.TagOption.TagRename> tagRenameOptional = renames.stream().filter(rule -> {
+                    if (Boolean.TRUE.equals(rule.getEnabledRegex())) {
+                        return Pattern.matches(rule.getSourceName(), originalTagName);
+                    }
+                    return originalTagName.equals(rule.getSourceName());
+                }).findFirst();
+                tagRenameOptional.ifPresent(tagRename -> {
+                    tag.setName(tagRename.getTargetName());
+                    renameTagMap.put(originalTagName, tagRename.getTargetName());
+                });
+            });
+            swagger.getPaths().forEach(((s, path) -> {
+                path.getOperationMap().forEach(((httpMethod, operation) -> {
+                    List<String> targetTagNames = operation.getTags()
+                            .stream()
+                            .map(tagName -> renameTagMap.getOrDefault(tagName, tagName))
+                            .collect(Collectors.toList());
+                    operation.setTags(targetTagNames);
+                }));
+            }));
+        });
+
+
+    }
+
+    public void preprocessOperation(Swagger swagger, Preprocess.OperationOption operationOption) {
+        if (operationOption.hashFilter()) {
+            if (operationOption.getIncludeFilter() != null) {
+                Set<String> idFilter = Optional.ofNullable(operationOption.getIncludeFilter().getByIds()).orElse(Collections.emptySet());
+                Set<String> urlFilter = Optional.ofNullable(operationOption.getIncludeFilter().getByUrls()).orElse(Collections.emptySet());
+                swagger.getPaths().entrySet().removeIf(pathEntry -> !urlFilter.contains(pathEntry.getKey()));
+                swagger.getPaths().forEach(((url, path) -> {
+                    path.getOperationMap().entrySet().removeIf(operationEntry -> !idFilter.contains(operationEntry.getValue().getOperationId()));
+                }));
+            } else if (operationOption.getExcludeFilter() != null) {
+                Set<String> idFilter = Optional.ofNullable(operationOption.getIncludeFilter().getByIds()).orElse(Collections.emptySet());
+                Set<String> urlFilter = Optional.ofNullable(operationOption.getIncludeFilter().getByUrls()).orElse(Collections.emptySet());
+                swagger.getPaths().entrySet().removeIf(pathEntry -> urlFilter.contains(pathEntry.getKey()));
+                swagger.getPaths().forEach(((url, path) -> {
+                    path.getOperationMap().entrySet().removeIf(entry -> idFilter.contains(entry.getValue().getOperationId()));
+                }));
+            }
+        }
+
+        Optional.ofNullable(operationOption.getConsumeRewrites()).ifPresent(consumeRewrites -> {
+            swagger.getPaths().forEach(((url, path) -> {
+                path.getOperationMap().forEach(((httpMethod, operation) -> {
+                    consumeRewrites.stream().filter(consumeRewrite -> {
+                        boolean methodMatch = httpMethod.name().equalsIgnoreCase(consumeRewrite.getHttpMethod());
+                        // method filter
+                        if (!methodMatch) {
+                            return false;
+                        }
+                        if (Boolean.TRUE.equals(consumeRewrite.getEnabledRegex())) {
+                            return Pattern.matches(consumeRewrite.getUrl(), url);
+                        }
+                        return url.equals(consumeRewrite.getUrl());
+                    }).findFirst().ifPresent(consumeRewrite -> {
+                        operation.setConsumes(Collections.singletonList(consumeRewrite.getConsume()));
+                        if (Boolean.TRUE.equals(consumeRewrite.getClearFlag())) {
+                            operation.setConsumes(Collections.emptyList());
+                        }
+                    });
+                }));
+            }));
+        });
+
+        Optional.ofNullable(operationOption.getIdRewrites()).ifPresent(idRewrites -> {
+            swagger.getPaths().forEach(((s, path) -> {
+                path.getOperationMap().forEach(((httpMethod, operation) -> {
+                    idRewrites.stream().filter(idRewrite -> {
+                        boolean limitedTagPass = Optional.ofNullable(idRewrite.getLimitedTag())
+                                .map(limitedTag -> operation.getTags().contains(limitedTag))
+                                .orElse(true);
+                        // tag过滤
+                        if (!limitedTagPass) {
+                            return false;
+                        }
+                        if (Boolean.TRUE.equals(idRewrite.getEnabledRegex())) {
+                            return Pattern.matches(idRewrite.getOriginalId(), operation.getOperationId());
+                        }
+                        return operation.getOperationId().equals(idRewrite.getOriginalId());
+                    }).findFirst().ifPresent(idRewrite -> {
+                        String targetId = idRewrite.getTargetId();
+                        if (Boolean.TRUE.equals(idRewrite.getEnabledRegex())) {
+                            Pattern pattern = Pattern.compile(idRewrite.getOriginalId());
+                            Matcher matcher = pattern.matcher(operation.getOperationId());
+                            matcher.matches();
+                            for (int index = 1; index <= matcher.groupCount(); index++) {
+                                targetId = targetId.replaceAll("\\{" + index + "}", matcher.group(index));
+                            }
+                        }
+                        operation.setOperationId(targetId);
+                    });
+                }));
+            }));
+        });
+
+
+    }
+
+    public void preprocessRef(Swagger swagger, Preprocess.RefOption ref) {
+        Optional.ofNullable(ref.getRewrites()).ifPresent(refRewrites -> {
+            swagger.getDefinitions().forEach(((name, model) -> {
+                Optional.ofNullable(model.getProperties()).orElse(Collections.emptyMap()).forEach(((propertyName, property) -> {
+                    Optional.ofNullable(property)
+                            .map(p -> {
+                                if (property instanceof ArrayProperty) {
+                                    ArrayProperty arrayProperty = (ArrayProperty) property;
+                                    if (arrayProperty.getItems() instanceof RefProperty) {
+                                        return (RefProperty) arrayProperty.getItems();
+                                    }
+                                }
+                                if (property instanceof RefProperty) {
+                                    return (RefProperty) property;
+                                }
+                                return null;
+                            })
+                            .ifPresent(refProperty -> {
+                                refRewrites.stream().filter(refRewrite -> {
+                                    if (Boolean.TRUE.equals(refRewrite.getEnabledRegex())) {
+                                        return Pattern.matches(refRewrite.getOriginalRef(), refProperty.getOriginalRef());
+                                    }
+                                    return refProperty.getOriginalRef().equals(refRewrite.getOriginalRef());
+                                }).findFirst().ifPresent(refRewrite -> {
+                                    String targetRef = refRewrite.getTargetRef();
+                                    if (Boolean.TRUE.equals(refRewrite.getEnabledRegex())) {
+                                        Pattern pattern = Pattern.compile(refRewrite.getOriginalRef());
+                                        Matcher matcher = pattern.matcher(refProperty.getOriginalRef());
+                                        matcher.matches();
+                                        for (int index = 1; index <= matcher.groupCount(); index++) {
+                                            targetRef = targetRef.replaceAll("\\{" + index + "}", matcher.group(index));
+                                        }
+                                    }
+                                    refProperty.set$ref(targetRef);
+                                    Optional.ofNullable(refRewrite.getImports())
+                                            .ifPresent(imports -> model.getVendorExtensions().put(X_IMPORT, imports));
+                                });
+                            });
+                }));
+            }));
+            swagger.getPaths().forEach(((s, path) -> {
+                path.getOperationMap().forEach(((httpMethod, operation) -> {
+
+                    // resp
+                    operation.getResponses().forEach(((status, response) -> {
+                        if (response.getResponseSchema() instanceof RefModel) {
+                            RefModel refModel = (RefModel) response.getResponseSchema();
+                            refRewrites.stream().filter(refRewrite -> {
+                                if (Boolean.TRUE.equals(refRewrite.getEnabledRegex())) {
+                                    return Pattern.matches(refRewrite.getOriginalRef(), refModel.getOriginalRef());
+                                }
+                                return refModel.getOriginalRef().equals(refRewrite.getOriginalRef());
+                            }).findFirst().ifPresent(refRewrite -> {
+                                String targetRef = refRewrite.getTargetRef();
+                                if (Boolean.TRUE.equals(refRewrite.getEnabledRegex())) {
+                                    Pattern pattern = Pattern.compile(refRewrite.getOriginalRef());
+                                    Matcher matcher = pattern.matcher(refModel.getOriginalRef());
+                                    matcher.matches();
+                                    for (int index = 1; index <= matcher.groupCount(); index++) {
+                                        targetRef = targetRef.replaceAll("\\{" + index + "}", matcher.group(index));
+                                    }
+                                }
+                                refModel.set$ref(targetRef);
+                                Optional.ofNullable(refRewrite.getImports())
+                                        .ifPresent(imports -> operation.setVendorExtension(X_IMPORT, imports));
+                            });
+                        }
+                    }));
+
+                }));
+            }));
+        });
+    }
+
+    public void preprocessDefinition(Swagger swagger, Preprocess.DefinitionOption definition) {
+
+        if (definition.hashFilter()) {
+            if (definition.getIncludeFilter() != null) {
+                Preprocess.DefinitionOption.Filter includeFilter = definition.getIncludeFilter();
+                Set<String> namePatterns = Optional.ofNullable(includeFilter.getByNames()).orElse(Collections.emptySet());
+                List<String> toExcludeDefinitionNames = swagger.getDefinitions().keySet().stream().filter(definitionName -> {
+                    if (namePatterns.contains(definitionName)) {
+                        return false;
+                    }
+                    return namePatterns.stream().noneMatch(namePattern -> Pattern.matches(namePattern, definitionName));
+                }).collect(Collectors.toList());
+                toExcludeDefinitionNames.forEach(toExcludeDefinitionName -> swagger.getDefinitions().remove(toExcludeDefinitionName));
+            } else if (definition.getExcludeFilter() != null) {
+                Preprocess.DefinitionOption.Filter excludeFilter = definition.getExcludeFilter();
+                Set<String> namePatterns = Optional.ofNullable(excludeFilter.getByNames()).orElse(Collections.emptySet());
+                List<String> toExcludeDefinitionNames = swagger.getDefinitions().keySet().stream().filter(definitionName -> {
+                    if (namePatterns.contains(definitionName)) {
+                        return true;
+                    }
+                    return namePatterns.stream().anyMatch(namePattern -> Pattern.matches(namePattern, definitionName));
+                }).collect(Collectors.toList());
+                toExcludeDefinitionNames.forEach(toExcludeDefinitionName -> swagger.getDefinitions().remove(toExcludeDefinitionName));
+            }
+        }
+
     }
 
     private ResolveResult resolve(Swagger swagger) {
@@ -63,6 +353,9 @@ public class SwaggerResolver implements IResolver {
         if (isIgnore(swagger.getVendorExtensions())) {
             // log
             return null;
+        }
+        if ("/".equals(swagger.getBasePath())) {
+            swagger.setBasePath(null);
         }
 
         List<Dto> dtos = parseDtos(swagger);
@@ -340,10 +633,13 @@ public class SwaggerResolver implements IResolver {
                 field.setType(innerClassName);
             }
             field.getAnnotations().add(AnnotationUtils.valid());
+        } else if (property instanceof MapProperty) {
+            field.setType(Object.class.getSimpleName());
+            field.getAnnotations().add(AnnotationUtils.valid());
         } else {
-            TypeMapping mapping = TypeMapping.parse(property.getType(), property.getFormat());
-            field.setType(mapping.getType());
-            field.getImports().add(mapping.getImportValue());
+            SwaggerTypeConvertor.JavaType mapping = typeConvertor.convert(property.getType(), property.getFormat());
+            field.setType(mapping.formatType());
+            field.getImports().add(mapping.imports());
         }
         return field;
     }
@@ -378,7 +674,10 @@ public class SwaggerResolver implements IResolver {
                     );
 
                     handlerClass.getFeignClientAnnotations().add(
-                            SpringAnnotations.FeignClient(getFeignClientName(tag.getVendorExtensions())),
+                            SpringAnnotations.FeignClient(
+                                    getFeignClientName(tag.getVendorExtensions()),
+                                    Optional.ofNullable(getFeignClientContextId(tag.getVendorExtensions())).orElse(tag.getName())
+                            ),
                             SpringAnnotations.Validated()
                     );
 
@@ -425,10 +724,10 @@ public class SwaggerResolver implements IResolver {
                     }
                     if (parameter instanceof PathParameter || parameter instanceof HeaderParameter) {
                         AbstractSerializableParameter<?> pathParameter = (AbstractSerializableParameter<?>) parameter;
-                        TypeMapping mapping = TypeMapping.parse(pathParameter.getType(), pathParameter.getFormat());
-                        // 只支持基本类型，直接获取type就行
-                        param.setType(mapping.getType());
-                        param.getImports().add(mapping.getImportValue());
+                        SwaggerTypeConvertor.JavaType mapping = typeConvertor.convert(pathParameter.getType(), pathParameter.getFormat());
+                        param.setType(mapping.formatType());
+                        param.getImports().add(mapping.imports());
+
                         if (parameter instanceof PathParameter) {
                             param.setTag(HandlerMethodParamTag.PATH);
                             param.getControllerAnnotations().add(SpringAnnotations.PathVariable(parameter.getName()));
@@ -441,14 +740,28 @@ public class SwaggerResolver implements IResolver {
                     } else if (parameter instanceof BodyParameter) {
                         BodyParameter bodyParameter = ((BodyParameter) parameter);
                         Model model = bodyParameter.getSchema();
-                        if (!(model instanceof RefModel)) {
-                            throw new RuntimeException("body类型参数只支持ref引用");
+                        if (model instanceof RefModel) {
+                            // TODO 同 DTO   arrayModel refModel modelImpl
+                            String typeName = SwaggerUtils.getClassNameFromRefPath(model.getReference());
+                            param.setType(typeName);
+                            param.setTag(HandlerMethodParamTag.BODY);
+                            param.getControllerAnnotations().add(SpringAnnotations.Valid());
+                        } else if (model instanceof ArrayModel && ((ArrayModel) model).getItems() instanceof RefProperty) {
+                            RefProperty refProperty = ((RefProperty) ((ArrayModel) model).getItems());
+                            // TODO 同 DTO   arrayModel refModel modelImpl
+                            String typeName = SwaggerUtils.getClassNameFromRefPath(refProperty.getOriginalRef());
+                            param.setType(String.format("%s<%s>", List.class.getSimpleName(), typeName));
+                            param.setTag(HandlerMethodParamTag.BODY);
+                            param.getControllerAnnotations().add(SpringAnnotations.Valid());
+                            param.getImports().add(List.class.getName());
+                        } else if (model instanceof ModelImpl) {
+                            ModelImpl modelImpl = (ModelImpl) model;
+                            SwaggerTypeConvertor.JavaType mapping = typeConvertor.convert(modelImpl.getType(), modelImpl.getFormat());
+                            param.setType(mapping.formatType());
+                            param.getImports().add(mapping.imports());
+                        } else {
+                            throw new RuntimeException("不支持的body类型参数");
                         }
-                        // TODO 同 DTO   arrayModel refModel modelImpl
-                        String typeName = SwaggerUtils.getClassNameFromRefPath(model.getReference());
-                        param.setType(typeName);
-                        param.setTag(HandlerMethodParamTag.BODY);
-                        param.getControllerAnnotations().add(SpringAnnotations.Valid());
                     } else {
                         throw new RuntimeException("目前只能处理 query path body 三类参数");
                     }
@@ -460,16 +773,61 @@ public class SwaggerResolver implements IResolver {
                 .collect(Collectors.toList());
         // 封装 queryParams 为 QueryParamsDTO
         if (!CollectionUtils.isEmpty(queryParameters)) {
-            HandlerMethod.Param handlerMethodParam = new HandlerMethod.Param();
-            handlerMethodParam.setTag(HandlerMethodParamTag.QUERY);
-            handlerMethodParam.setName("queryParams");
-            handlerMethodParam.setDescription("query参数,详情参考dto定义");
-            handlerMethodParam.setType(SwaggerUtils.getClassNameFromHandlerMethodName(opName));
-            // 追加到definition定义列表中
-            handlerMethodParams.add(handlerMethodParam);
-            dtos.add(createQueryParamsDto(opName, queryParameters));
-            handlerMethodParam.getControllerAnnotations().add(SpringAnnotations.Valid());
+            boolean disabledMergeQueryParam = Optional.ofNullable(context.getOptions())
+                    .map(Option::getDisabledMergeQueryParam)
+                    .orElse(false);
+            if (disabledMergeQueryParam) {
+                queryParameters.stream().map(parameter -> {
+                    HandlerMethod.Param param = new HandlerMethod.Param();
+                    param.setName(parameter.getName());
+                    param.setDescription(parameter.getDescription());
+                    param.getAnnotations().add(parseAnnotations(parameter.getVendorExtensions()));
+                    param.getImports().add(getImports(parameter.getVendorExtensions()));
+
+                    String paramName = param.getName();
+                    String defaultValue = Optional.ofNullable(parameter.getDefaultValue()).map(Object::toString).orElse(null);
+                    getOptionalRename(parameter.getVendorExtensions()).ifPresent(param::setName);
+                    param.getAnnotations().add(AnnotationUtils.RequestParam(paramName, defaultValue, parameter.getRequired()));
+
+                    if (SwaggerConstants.TYPE_ARRAY.equals(parameter.getType())) {
+                        if (null == parameter.getItems()) {
+                            throw new RuntimeException("QueryParam array类型参数应该具备子类型!");
+                        }
+                        if (parameter.getItems() instanceof RefProperty) {
+                            throw new RuntimeException("QueryParam 暂不支持 List<$ref> ");
+                        }
+                        String type = parameter.getItems().getType();
+                        String format = parameter.getItems().getFormat();
+
+                        SwaggerTypeConvertor.JavaType mapping = typeConvertor.convert(type, format);
+                        param.setType(String.format("%s<%s>", List.class.getSimpleName(), mapping.formatType()));
+                        param.getImports().add(mapping.imports());
+
+                        param.getImports().add(List.class.getName());
+                    } else if (ObjectUtils.isEmpty(parameter.getType())) {
+                        param.setType(Object.class.getSimpleName());
+                    } else {
+                        SwaggerTypeConvertor.JavaType mapping = typeConvertor.convert(parameter.getType(), parameter.getFormat());
+                        param.setType(mapping.formatType());
+                        param.getImports().add(mapping.imports());
+                    }
+                    return param;
+                }).forEach(handlerMethodParams::add);
+
+            } else {
+                HandlerMethod.Param handlerMethodParam = new HandlerMethod.Param();
+                handlerMethodParam.setTag(HandlerMethodParamTag.QUERY);
+                handlerMethodParam.setName("queryParams");
+                handlerMethodParam.setDescription("query参数,详情参考dto定义");
+                handlerMethodParam.setType(SwaggerUtils.getClassNameFromHandlerMethodName(opName));
+                handlerMethodParam.getControllerAnnotations().add(SpringAnnotations.Valid());
+                // 追加到definition定义列表中
+                handlerMethodParams.add(handlerMethodParam);
+                dtos.add(createQueryParamsDto(opName, queryParameters));
+            }
         }
+
+
         return handlerMethodParams;
     }
 
@@ -507,14 +865,18 @@ public class SwaggerResolver implements IResolver {
                 }
                 String type = parameter.getItems().getType();
                 String format = parameter.getItems().getFormat();
-                TypeMapping mapping = TypeMapping.parse(type, format);
-                field.setType(String.format("%s<%s>", List.class.getSimpleName(), mapping.getType()));
-                Optional.ofNullable(mapping.getImportValue()).ifPresent(field.getImports()::add);
+
+                SwaggerTypeConvertor.JavaType mapping = typeConvertor.convert(type, format);
+                field.setType(String.format("%s<%s>", List.class.getSimpleName(), mapping.formatType()));
+                field.getImports().add(mapping.imports());
+
                 field.getImports().add(List.class.getName());
+            } else if (ObjectUtils.isEmpty(parameter.getType())) {
+                field.setType(Object.class.getSimpleName());
             } else {
-                TypeMapping mapping = TypeMapping.parse(parameter.getType(), parameter.getFormat());
-                field.setType(mapping.getType());
-                Optional.ofNullable(mapping.getImportValue()).ifPresent(field.getImports()::add);
+                SwaggerTypeConvertor.JavaType mapping = typeConvertor.convert(parameter.getType(), parameter.getFormat());
+                field.setType(mapping.formatType());
+                field.getImports().add(mapping.imports());
             }
             return field;
         }).collect(Collectors.toList());
@@ -565,7 +927,7 @@ public class SwaggerResolver implements IResolver {
      */
     private HandlerMethod.Return getHandlerMethodReturn(Operation op) {
         Response resp = Optional.ofNullable(op.getResponses())
-                .map(responses->responses.get("200"))
+                .map(responses -> responses.get("200"))
                 .orElseThrow(() -> new RuntimeException("接口定义需要有一个200的返回声明!"));
         HandlerMethod.Return handlerMethodReturn = new HandlerMethod.Return();
         handlerMethodReturn.setDescription(resp.getDescription());
@@ -582,9 +944,9 @@ public class SwaggerResolver implements IResolver {
             if (childProperty instanceof RefProperty) {
                 childType = getClassNameFromRefPath(((RefProperty) childProperty).getOriginalRef());
             } else {
-                TypeMapping mapping = TypeMapping.parse(childProperty.getType(), childProperty.getFormat());
-                childType = mapping.getType();
-                handlerMethodReturn.getImports().add(mapping.getImportValue());
+                SwaggerTypeConvertor.JavaType mapping = typeConvertor.convert(childProperty.getType(), childProperty.getFormat());
+                childType = mapping.formatType();
+                handlerMethodReturn.getImports().add(mapping.imports());
             }
             handlerMethodReturn.setType(String.format("%s<%s>", List.class.getSimpleName(), childType));
             handlerMethodReturn.getImports().add(List.class.getName());
@@ -603,13 +965,17 @@ public class SwaggerResolver implements IResolver {
                     handlerMethodReturn.getImports().add(getImports(extParams));
                 }
             } else {
-                TypeMapping mapping = TypeMapping.parse(modelImpl.getType(), modelImpl.getFormat());
-                handlerMethodReturn.setType(mapping.getType());
-                handlerMethodReturn.getImports().add(mapping.getImportValue());
+                SwaggerTypeConvertor.JavaType mapping = typeConvertor.convert(modelImpl.getType(), modelImpl.getFormat());
+                handlerMethodReturn.setType(mapping.formatType());
+                handlerMethodReturn.getImports().add(mapping.imports());
             }
         } else {
             throw new RuntimeException("resp返回值只支持 $ref | type | List<$ref> |List<type> ");
         }
+//        Optional.ofNullable(model)
+//                .map(Model::getVendorExtensions)
+//                .map(SwaggerVendorExtensions::getImports)
+//                .ifPresent(handlerMethodReturn.getImports()::add);
         return handlerMethodReturn;
     }
 

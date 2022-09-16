@@ -2,6 +2,8 @@ package com.easycode.codegen.api.core.input;
 
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * @ClassName: GlobalConfig
  * @Description: TODO
@@ -24,6 +26,11 @@ public class GlobalConfig {
 
 
     private String definitionPath;
+
+    /**
+     * swagger json url
+     */
+    private List<String> definitionUrls;
 
     /**
      * 项目src目录的路径(默认可以从pom取，如果要生成在其他地方可自定义)
@@ -63,6 +70,8 @@ public class GlobalConfig {
     private CodegenCustom custom;
 
     private Plugins plugins;
+
+    private Option options;
 
     @Deprecated
     private SwaggerOption.YamlToJsonConfig sourceToJson;

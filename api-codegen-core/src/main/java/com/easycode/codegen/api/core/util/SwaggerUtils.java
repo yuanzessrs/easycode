@@ -4,21 +4,22 @@ import com.easycode.codegen.api.core.beans.SwaggerResource;
 import com.easycode.codegen.api.core.constants.SwaggerConstants;
 import com.easycode.codegen.utils.ClassUtils;
 import com.easycode.codegen.utils.FormatUtils;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.models.Swagger;
 import io.swagger.models.properties.Property;
 import io.swagger.parser.SwaggerParser;
+import io.swagger.util.Json;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.parser.OpenAPIV3Parser;
 import io.swagger.v3.parser.core.models.ParseOptions;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
+import org.springframework.util.ObjectUtils;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.net.URL;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.easycode.codegen.api.core.util.SwaggerVendorExtensions.getXDefault;
@@ -53,6 +54,9 @@ public class SwaggerUtils {
      */
     @SneakyThrows
     public static List<File> scan(String swaggerApiDirPath) {
+        if (ObjectUtils.isEmpty(swaggerApiDirPath)) {
+            return Collections.emptyList();
+        }
         File apiResourceDir = new File(swaggerApiDirPath);
         FileUtils.forceMkdir(apiResourceDir);
         File[] swaggerFiles = apiResourceDir.listFiles((file, name) -> name.endsWith(".yaml") || name.endsWith(".yml"));
@@ -60,7 +64,24 @@ public class SwaggerUtils {
         return Arrays.asList(swaggerFiles);
     }
 
-    public static List<Swagger> scanModels(String swaggerApiDirPath) {
+    @SneakyThrows
+    public static Swagger scanModelByURL(String url) {
+        if (ObjectUtils.isEmpty(url)) {
+            return null;
+        }
+        JsonNode swaggerNode = Json.mapper().readTree(new URL(url));
+        return new SwaggerParser().read(swaggerNode, true);
+    }
+
+    public static List<Swagger> scanModelsByURLs(List<String> urls) {
+        if (ObjectUtils.isEmpty(urls)) {
+            return Collections.emptyList();
+        }
+        return urls.stream().map(SwaggerUtils::scanModelByURL).collect(Collectors.toList());
+    }
+
+
+    public static List<Swagger> scanModelsByPath(String swaggerApiDirPath) {
         return SwaggerUtils.scan(swaggerApiDirPath)
                 .stream()
                 .map(SwaggerUtils::toSwagger)

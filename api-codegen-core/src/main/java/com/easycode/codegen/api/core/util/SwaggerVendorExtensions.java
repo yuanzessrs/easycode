@@ -9,6 +9,8 @@ import java.util.stream.Collectors;
 
 public class SwaggerVendorExtensions {
 
+    public static final String X_IMPORT = "x-import";
+
     public static String getXFieldVal(Map<String, Object> vendorExtensions, String key) {
         return Optional.ofNullable(vendorExtensions)
                 .map(map -> map.get("x-" + key))
@@ -60,7 +62,7 @@ public class SwaggerVendorExtensions {
     }
 
     public static List<String> getImports(Map<String, Object> vendorExtensions) {
-        Object it = vendorExtensions.get("x-import");
+        Object it = vendorExtensions.get(X_IMPORT);
         if (ObjectUtils.isEmpty(it)) {
             return Collections.emptyList();
         }
@@ -118,6 +120,10 @@ public class SwaggerVendorExtensions {
 
     public static String getFeignClientName(Map<String, Object> vendorExtensions) {
         return getXFieldVal(vendorExtensions, "FeignClientName");
+    }
+
+    public static String getFeignClientContextId(Map<String, Object> vendorExtensions) {
+        return getXFieldVal(vendorExtensions, "FeignClientContextId");
     }
 
     public static String getPackage(Map<String, Object> vendorExtensions) {

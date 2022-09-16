@@ -32,4 +32,14 @@ public class MojoTest {
     }
 
 
+    @Test
+    @Ignore
+    public void testMojoGoalFromRemote() throws Exception {
+        File testPom = new File(getBasedir(), "src/test/resources/projects/remote-test/pom.xml");
+        assertNotNull(testPom);
+        assertTrue(testPom.exists());
+        ApiCodegenMojo mojo = (ApiCodegenMojo) rule.lookupMojo("ApiCodegenMojo", testPom);
+        mojo.execute();
+    }
+
 }

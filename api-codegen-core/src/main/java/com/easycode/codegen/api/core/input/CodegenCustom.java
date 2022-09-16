@@ -30,9 +30,23 @@ public class CodegenCustom {
 
         private List<Annotation> presetAnnotations;
 
+        private Field field;
+
         private ToString toString;
 
         private Builder builder;
+
+        private Boolean enabledLombokGetter;
+
+        private Boolean enabledLombokSetter;
+
+
+        @Data
+        public static class Field {
+
+            private Boolean enabledAutoToLowerCamel;
+
+        }
 
     }
 

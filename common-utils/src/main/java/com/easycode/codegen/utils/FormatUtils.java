@@ -1,6 +1,6 @@
 package com.easycode.codegen.utils;
 
-import com.google.common.base.CaseFormat;
+import static com.google.common.base.CaseFormat.*;
 
 /**
  * @ClassName: FormatUtils
@@ -21,7 +21,7 @@ public class FormatUtils {
     }
 
     public static String smallSnakeToUpperSnake(String input) {
-        return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_UNDERSCORE, escapeQuotes(input));
+        return LOWER_UNDERSCORE.to(UPPER_UNDERSCORE, escapeQuotes(input));
     }
 
     /**
@@ -31,7 +31,7 @@ public class FormatUtils {
      * @return 大驼峰字符串
      */
     public static String snakeToUpperCamel(String snakeString) {
-        return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, escapeQuotes(snakeString));
+        return LOWER_UNDERSCORE.to(UPPER_CAMEL, escapeQuotes(snakeString));
     }
 
     /**
@@ -41,11 +41,18 @@ public class FormatUtils {
      * @return 小驼峰字符串
      */
     public static String snakeToLowerCamel(String snakeString) {
-        return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, escapeQuotes(snakeString));
+        return LOWER_UNDERSCORE.to(LOWER_CAMEL, escapeQuotes(snakeString));
     }
 
     public static String lowerCamelToUpperCamel(String snakeString) {
-        return CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, escapeQuotes(snakeString));
+        return LOWER_CAMEL.to(UPPER_CAMEL, escapeQuotes(snakeString));
+    }
+
+
+    public static String toLowerCamel(String source) {
+        source = source.contains("-") ? LOWER_HYPHEN.to(LOWER_CAMEL, escapeQuotes(source)) : source;
+        source = source.contains("_") ? LOWER_UNDERSCORE.to(LOWER_CAMEL, escapeQuotes(source)) : source;
+        return source;
     }
 
 }

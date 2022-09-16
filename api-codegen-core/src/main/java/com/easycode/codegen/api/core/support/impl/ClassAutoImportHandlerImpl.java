@@ -51,6 +51,14 @@ public class ClassAutoImportHandlerImpl implements IExtendHandler {
                 dto.getAnnotations().get().forEach(annotationAutoImportProcessor);
                 dto.getFields().forEach(field -> {
                     field.getAnnotations().get().forEach(annotationAutoImportProcessor);
+
+                    // process type
+                    if (dto.getExternalImports().stream().noneMatch(s -> s.contains(field.getType()))) {
+                        if (mappings.containsKey(field.getType())) {
+                            field.getImports().add(mappings.get(field.getType()));
+                        }
+                    }
+
                 });
             };
             Consumer<Dto> recurDtoAnnotationAutoImportProcessor = dto -> {

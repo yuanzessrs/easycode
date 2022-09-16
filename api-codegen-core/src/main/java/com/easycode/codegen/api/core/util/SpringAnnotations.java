@@ -1,9 +1,10 @@
 package com.easycode.codegen.api.core.util;
 
 import com.easycode.codegen.api.core.output.AnnotationDefinition;
+import org.springframework.util.ObjectUtils;
+
 import java.util.List;
 import java.util.Optional;
-import org.springframework.util.ObjectUtils;
 
 /**
  * @class-name: SpringAnnotations
@@ -17,7 +18,7 @@ public class SpringAnnotations {
     }
 
     public static AnnotationDefinition RequestMapping(String value, List<String> consumes, List<String> produces,
-            String method) {
+                                                      String method) {
         AnnotationDefinition annotation = new AnnotationDefinition();
         annotation.setAnnotationName("RequestMapping");
         annotation.getImports().add("org.springframework.web.bind.annotation.RequestMapping");
@@ -85,11 +86,14 @@ public class SpringAnnotations {
         return annotation;
     }
 
-    public static AnnotationDefinition FeignClient(String name) {
+    public static AnnotationDefinition FeignClient(String name, String contextId) {
         AnnotationDefinition annotation = new AnnotationDefinition();
         annotation.setAnnotationName("FeignClient");
         annotation.getImports().add("org.springframework.cloud.openfeign.FeignClient");
         annotation.addProperty("name", Optional.ofNullable(name).map(String::trim).orElse("null"), true);
+        if (!ObjectUtils.isEmpty(contextId)) {
+            annotation.addProperty("contextId", contextId, true);
+        }
         return annotation;
     }
 

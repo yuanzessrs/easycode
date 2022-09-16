@@ -1,16 +1,14 @@
 package com.easycode.codegen.api.core.resolver.impl;
 
 import com.easycode.codegen.api.core.constants.SwaggerConstants;
-import com.easycode.codegen.api.core.enums.TypeMapping;
-import com.easycode.codegen.api.core.output.ResolveResult;
 import com.easycode.codegen.api.core.output.Dto;
 import com.easycode.codegen.api.core.output.HandlerClass;
+import com.easycode.codegen.api.core.output.ResolveResult;
 import com.easycode.codegen.api.core.resolver.IResolver;
 import com.easycode.codegen.api.core.resolver.ResolverContext;
 import com.easycode.codegen.api.core.util.AnnotationUtils;
 import com.easycode.codegen.api.core.util.SpringAnnotations;
 import com.easycode.codegen.api.core.util.SwaggerUtils;
-import com.easycode.codegen.api.core.util.SwaggerVendorExtensions;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.ArraySchema;
@@ -122,8 +120,8 @@ public class OpenapiResolver implements IResolver {
                 // default annotation
                 handlerClass.getAnnotations().add(SpringAnnotations.Validated());
                 handlerClass.getControllerAnnotations().add(SpringAnnotations.Controller());
-                handlerClass.getFeignClientAnnotations()
-                        .add(SpringAnnotations.FeignClient(SwaggerVendorExtensions.getFeignClientName(tag.getExtensions())));
+//                handlerClass.getFeignClientAnnotations()
+//                        .add(SpringAnnotations.FeignClient(SwaggerVendorExtensions.getFeignClientName(tag.getExtensions())));
                 handlerClass.getServiceAnnotations().add(Collections.emptyList());
 
 //                        if (!ObjectUtils.isEmpty(handlerClass.getBasePath())) {
@@ -300,9 +298,14 @@ public class OpenapiResolver implements IResolver {
                 }
                 field.getAnnotations().add(AnnotationUtils.valid());
             } else {
-                TypeMapping mapping = TypeMapping.parse(property.getType(), property.getFormat());
-                field.setType(mapping.getType());
-                field.getImports().add(mapping.getImportValue());
+//                TypeMapping mapping = TypeMapping.parse(property.getType(), property.getFormat());
+//                field.setType(mapping.getType());
+//                field.getImports().add(mapping.getImportValue());
+//
+//                SwaggerTypeConvertor.JavaType mapping = typeConvertor.convert(property.getType(), property.getFormat());
+//                field.setType(mapping.formatType());
+//                field.getImports().add(mapping.imports());
+                // todo
             }
             return field;
         }
