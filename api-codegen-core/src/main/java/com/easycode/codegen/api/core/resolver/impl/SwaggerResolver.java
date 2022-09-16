@@ -27,6 +27,7 @@ import org.springframework.util.ObjectUtils;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -86,12 +87,33 @@ public class SwaggerResolver implements IResolver {
 
     public Swagger preprocessModel(Swagger swagger) {
         Optional.ofNullable(context.getSwaggerOption()).map(SwaggerOption::getPreprocess).ifPresent(preprocess -> {
+            preprocessCommon(swagger, preprocess);
             Optional.ofNullable(preprocess.getTag()).ifPresent(tag -> preprocessTag(swagger, tag));
             Optional.ofNullable(preprocess.getOperation()).ifPresent(val -> preprocessOperation(swagger, val));
             Optional.ofNullable(preprocess.getRef()).ifPresent(ref -> preprocessRef(swagger, ref));
             Optional.ofNullable(preprocess.getDefinition()).ifPresent(dto -> preprocessDefinition(swagger, dto));
         });
         return swagger;
+    }
+
+    public void preprocessCommon(Swagger swagger, Preprocess option) {
+        Optional.ofNullable(option).map(Preprocess::getConsumesAndProducesFilter).ifPresent(consumeProduceFilter -> {
+            Set<String> patterns = Optional.ofNullable(consumeProduceFilter.getPatterns()).orElse(Collections.emptySet());
+            Predicate<String> removeIfFunction = contentType -> consumeProduceFilter.enabledRegex()
+                    ? patterns.stream().anyMatch(pattern -> Pattern.matches(pattern, contentType))
+                    : patterns.contains(contentType);
+            Optional.ofNullable(swagger.getConsumes()).ifPresent(vals -> vals.removeIf(removeIfFunction));
+            Optional.ofNullable(swagger.getProduces()).ifPresent(vals -> vals.removeIf(removeIfFunction));
+
+            swagger.getPaths().forEach(((url, path) -> {
+                path.getOperationMap().forEach(((httpMethod, operation) -> {
+                    Optional.ofNullable(operation.getConsumes()).ifPresent(vals -> vals.removeIf(removeIfFunction));
+                    Optional.ofNullable(operation.getProduces()).ifPresent(vals -> vals.removeIf(removeIfFunction));
+
+                }));
+            }));
+        });
+
     }
 
     public void preprocessTag(Swagger swagger, Preprocess.TagOption tagOption) {
@@ -188,6 +210,29 @@ public class SwaggerResolver implements IResolver {
                 }));
             }
         }
+
+        Optional.ofNullable(operationOption.getRequiredQueryParams()).ifPresent(requiredQueryParams -> {
+            swagger.getPaths().forEach(((url, path) -> {
+                path.getOperationMap().forEach(((httpMethod, operation) -> {
+                    Set<String> paramNames = requiredQueryParams.stream().filter(rule -> {
+                        boolean methodMatch = httpMethod.name().equalsIgnoreCase(rule.getHttpMethod());
+                        // method filter
+                        if (!methodMatch) {
+                            return false;
+                        }
+                        if (Boolean.TRUE.equals(rule.getEnabledRegex())) {
+                            return Pattern.matches(rule.getUrl(), url);
+                        }
+                        return url.equals(rule.getUrl());
+                    }).flatMap(rule -> rule.getParamNames().stream()).collect(Collectors.toSet());
+                    operation.getParameters().forEach(parameter -> {
+                        if (paramNames.contains(parameter.getName())) {
+                            parameter.setRequired(true);
+                        }
+                    });
+                }));
+            }));
+        });
 
         Optional.ofNullable(operationOption.getConsumeRewrites()).ifPresent(consumeRewrites -> {
             swagger.getPaths().forEach(((url, path) -> {

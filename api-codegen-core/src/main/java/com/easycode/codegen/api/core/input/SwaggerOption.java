@@ -24,6 +24,20 @@ public class SwaggerOption {
     @Data
     public static class Preprocess {
 
+        private ConsumesAndProducesFilter consumesAndProducesFilter;
+
+        @Data
+        public static class ConsumesAndProducesFilter {
+
+            private Set<String> patterns;
+
+            private Boolean enabledRegex;
+
+            public Boolean enabledRegex() {
+                return Boolean.TRUE.equals(enabledRegex);
+            }
+        }
+
         private TagOption tag;
 
         @Data
@@ -79,6 +93,22 @@ public class SwaggerOption {
 
         @Data
         public static class OperationOption {
+
+            private List<OperationRequiredQueryParams> requiredQueryParams;
+
+            @Data
+            public static class OperationRequiredQueryParams {
+
+                private String url;
+
+                private String httpMethod;
+
+                private Set<String> paramNames;
+
+                private Boolean enabledRegex;
+
+
+            }
 
             private List<OperationIdRewrite> idRewrites;
 
