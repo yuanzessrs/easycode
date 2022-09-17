@@ -262,7 +262,7 @@ public class SwaggerResolver implements IResolver {
                 path.getOperationMap().forEach(((httpMethod, operation) -> {
                     idRewrites.stream().filter(idRewrite -> {
                         boolean limitedTagPass = Optional.ofNullable(idRewrite.getLimitedTag())
-                                .map(limitedTag -> operation.getTags().contains(limitedTag))
+                                .map(limitedTag -> idRewrite.getEnabledRegex() ? operation.getTags().stream().anyMatch(tag -> Pattern.matches(limitedTag, tag)) : operation.getTags().contains(limitedTag))
                                 .orElse(true);
                         // tag过滤
                         if (!limitedTagPass) {
