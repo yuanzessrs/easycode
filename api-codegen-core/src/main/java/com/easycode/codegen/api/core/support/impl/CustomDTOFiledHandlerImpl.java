@@ -30,7 +30,7 @@ public class CustomDTOFiledHandlerImpl implements IExtendHandler {
     }
 
     void handle(Dto dto, CodegenCustom.DTO.Field customField) {
-        if (Boolean.TRUE.equals(customField.getEnabledAutoToLowerCamel())) {
+        if (Boolean.TRUE.equals(customField.getAutoRenameToLowerCamel())) {
             Optional.ofNullable(dto.getFields()).orElse(Collections.emptyList()).forEach(field -> {
                 if (ObjectUtils.isEmpty(field.getAliasValues())) {
                     String originalName = field.getName();

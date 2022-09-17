@@ -44,7 +44,7 @@ public class CodegenCustom {
         @Data
         public static class Field {
 
-            private Boolean enabledAutoToLowerCamel;
+            private Boolean autoRenameToLowerCamel;
 
         }
 
