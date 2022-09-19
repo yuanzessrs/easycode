@@ -55,4 +55,11 @@ public class FormatUtils {
         return source;
     }
 
+    public static String toUpperCamel(String source) {
+        source = source.contains("-") ? LOWER_HYPHEN.to(UPPER_CAMEL, escapeQuotes(source)) : source;
+        source = source.contains("_") ? LOWER_UNDERSCORE.to(UPPER_CAMEL, escapeQuotes(source)) : source;
+        source = LOWER_CAMEL.to(UPPER_CAMEL, escapeQuotes(source));
+        return source;
+    }
+
 }

@@ -174,8 +174,19 @@ public class SwaggerResolver implements IResolver {
                     return originalTagName.equals(rule.getSourceName());
                 }).findFirst();
                 tagRenameOptional.ifPresent(tagRename -> {
-                    tag.setName(tagRename.getTargetName());
-                    renameTagMap.put(originalTagName, tagRename.getTargetName());
+                    String finalTagName = tagRename.getTargetName();
+                    if (Boolean.TRUE.equals(tagRename.getEnabledRegex())) {
+                        Matcher matcher = Pattern.compile(tagRename.getSourceName()).matcher(originalTagName);
+                        matcher.matches();
+                        for (int index = 1; index <= matcher.groupCount(); index++) {
+                            finalTagName = finalTagName.replaceAll("\\{" + index + "}", matcher.group(index));
+                        }
+                    }
+                    if (Boolean.TRUE.equals(tagRename.getUpgradeToUpperCamel())) {
+                        finalTagName = FormatUtils.toUpperCamel(finalTagName);
+                    }
+                    tag.setName(finalTagName);
+                    renameTagMap.put(originalTagName, finalTagName);
                 });
             });
             swagger.getPaths().forEach(((s, path) -> {

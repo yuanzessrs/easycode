@@ -68,6 +68,8 @@ public class SwaggerOption {
 
                 private String targetName;
 
+                private Boolean upgradeToUpperCamel;
+
                 private Boolean enabledRegex;
 
             }
