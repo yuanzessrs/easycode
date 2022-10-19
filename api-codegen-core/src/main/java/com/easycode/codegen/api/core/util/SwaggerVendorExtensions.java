@@ -61,6 +61,11 @@ public class SwaggerVendorExtensions {
                 || "true".equalsIgnoreCase(getXFieldVal(vendorExtensions, "disabled"));
     }
 
+    public static Optional<Boolean> getOptionalDisabledMergeQueryParam(Map<String, Object> vendorExtensions) {
+        return Optional.ofNullable(getXFieldVal(vendorExtensions, "disabledMergeQueryParam"))
+                .map("true"::equalsIgnoreCase);
+    }
+
     public static List<String> getImports(Map<String, Object> vendorExtensions) {
         Object it = vendorExtensions.get(X_IMPORT);
         if (ObjectUtils.isEmpty(it)) {

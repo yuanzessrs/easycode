@@ -834,6 +834,7 @@ public class SwaggerResolver implements IResolver {
             boolean disabledMergeQueryParam = Optional.ofNullable(context.getOptions())
                     .map(Option::getDisabledMergeQueryParam)
                     .orElse(false);
+            disabledMergeQueryParam = getOptionalDisabledMergeQueryParam(vendorExtensions).orElse(disabledMergeQueryParam);
             if (disabledMergeQueryParam) {
                 queryParameters.stream().map(parameter -> {
                     HandlerMethod.Param param = new HandlerMethod.Param();
@@ -845,7 +846,8 @@ public class SwaggerResolver implements IResolver {
                     String paramName = param.getName();
                     String defaultValue = Optional.ofNullable(parameter.getDefaultValue()).map(Object::toString).orElse(null);
                     getOptionalRename(parameter.getVendorExtensions()).ifPresent(param::setName);
-                    param.getAnnotations().add(AnnotationUtils.RequestParam(paramName, defaultValue, parameter.getRequired()));
+                    param.getControllerAnnotations().add(AnnotationUtils.RequestParam(paramName, defaultValue, parameter.getRequired()));
+                    param.getFeignClientAnnotations().add(AnnotationUtils.RequestParam(paramName, defaultValue, parameter.getRequired()));
 
                     if (SwaggerConstants.TYPE_ARRAY.equals(parameter.getType())) {
                         if (null == parameter.getItems()) {
