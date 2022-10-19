@@ -126,6 +126,14 @@ public class SwaggerVendorExtensions {
         return getXFieldVal(vendorExtensions, "FeignClientContextId");
     }
 
+    public static String getFeignClientPath(Map<String, Object> vendorExtensions) {
+        return getXFieldVal(vendorExtensions, "FeignClientPath");
+    }
+
+    public static boolean disableFeignClientPathQuotes(Map<String, Object> vendorExtensions) {
+        return "true".equalsIgnoreCase(getXFieldVal(vendorExtensions, "FeignClientDisablePathQuotes"));
+    }
+
     public static String getPackage(Map<String, Object> vendorExtensions) {
         return getXFieldVal(vendorExtensions, "package");
     }

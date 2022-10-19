@@ -213,8 +213,8 @@ public class SwaggerResolver implements IResolver {
                     path.getOperationMap().entrySet().removeIf(operationEntry -> !idFilter.contains(operationEntry.getValue().getOperationId()));
                 }));
             } else if (operationOption.getExcludeFilter() != null) {
-                Set<String> idFilter = Optional.ofNullable(operationOption.getIncludeFilter().getByIds()).orElse(Collections.emptySet());
-                Set<String> urlFilter = Optional.ofNullable(operationOption.getIncludeFilter().getByUrls()).orElse(Collections.emptySet());
+                Set<String> idFilter = Optional.ofNullable(operationOption.getExcludeFilter().getByIds()).orElse(Collections.emptySet());
+                Set<String> urlFilter = Optional.ofNullable(operationOption.getExcludeFilter().getByUrls()).orElse(Collections.emptySet());
                 swagger.getPaths().entrySet().removeIf(pathEntry -> urlFilter.contains(pathEntry.getKey()));
                 swagger.getPaths().forEach(((url, path) -> {
                     path.getOperationMap().entrySet().removeIf(entry -> idFilter.contains(entry.getValue().getOperationId()));
@@ -732,7 +732,9 @@ public class SwaggerResolver implements IResolver {
                     handlerClass.getFeignClientAnnotations().add(
                             SpringAnnotations.FeignClient(
                                     getFeignClientName(tag.getVendorExtensions()),
-                                    Optional.ofNullable(getFeignClientContextId(tag.getVendorExtensions())).orElse(tag.getName())
+                                    Optional.ofNullable(getFeignClientContextId(tag.getVendorExtensions())).orElse(tag.getName()),
+                                    getFeignClientPath(tag.getVendorExtensions()),
+                                    disableFeignClientPathQuotes(tag.getVendorExtensions())
                             ),
                             SpringAnnotations.Validated()
                     );

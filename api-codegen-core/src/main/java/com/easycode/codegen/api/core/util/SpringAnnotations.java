@@ -86,7 +86,8 @@ public class SpringAnnotations {
         return annotation;
     }
 
-    public static AnnotationDefinition FeignClient(String name, String contextId) {
+    public static AnnotationDefinition FeignClient(String name, String contextId,
+                                                   String path, boolean disableFeignClientPathQuotes) {
         AnnotationDefinition annotation = new AnnotationDefinition();
         annotation.setAnnotationName("FeignClient");
         annotation.getImports().add("org.springframework.cloud.openfeign.FeignClient");
@@ -94,6 +95,11 @@ public class SpringAnnotations {
         if (!ObjectUtils.isEmpty(contextId)) {
             annotation.addProperty("contextId", contextId, true);
         }
+
+        if (!ObjectUtils.isEmpty(path)) {
+            annotation.addProperty("path", path, !disableFeignClientPathQuotes);
+        }
+
         return annotation;
     }
 
