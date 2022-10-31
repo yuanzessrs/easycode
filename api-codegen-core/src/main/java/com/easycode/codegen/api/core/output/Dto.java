@@ -51,6 +51,9 @@ public class Dto implements Importable {
                     .forEach(annotation -> externalImports.addAll(annotation.getImports().get()));
         });
         annotations.get().forEach(annotation -> externalImports.addAll(annotation.getImports().get()));
+
+        getInnerDtos().forEach(innerDto -> externalImports.addAll(innerDto.getExternalImports()));
+
         return externalImports.stream().filter(Objects::nonNull).distinct().collect(Collectors.toList());
     }
 
