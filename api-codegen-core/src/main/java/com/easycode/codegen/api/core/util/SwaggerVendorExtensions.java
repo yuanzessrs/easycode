@@ -72,7 +72,7 @@ public class SwaggerVendorExtensions {
             return Collections.emptyList();
         }
         if (it instanceof Collection) {
-            return ((Collection<?>) it).stream().map(o -> (String) o).map(String::trim).collect(Collectors.toList());
+            return ((Collection<?>) it).stream().filter(Objects::nonNull).map(o -> (String) o).map(String::trim).collect(Collectors.toList());
         }
         return Arrays.stream(((String) it).split(GlobalConstants.SPLIT_REGEX))
                 .filter(o -> null != o && !o.isEmpty())
