@@ -425,6 +425,12 @@ public class SwaggerResolver implements IResolver {
         }
         // request mapping 解析
         swagger.getPaths().forEach((url, path) -> {
+            // 当前path的自定义扩展参数
+            Map<String, Object> pathVendorExtensions = path.getVendorExtensions();
+            if (isIgnore(pathVendorExtensions)) {
+                log.info("跳过 url:{}", url);
+                return;
+            }
             // 处理 每个path，每个path包含 get post delete patch put
             log.info("当前正在处理url:{}", url);
             // tag check
@@ -443,14 +449,17 @@ public class SwaggerResolver implements IResolver {
                             "\ntips: tag不能跨文档绑定，仅支持当前文档定义的 tag", url, op.getOperationId(), tag));
                 }
             });
-            // 当前path的自定义扩展参数
-            Map<String, Object> pathExtParams = path.getVendorExtensions();
+
             // 处理请求定义
             path.getOperationMap().forEach((opType, op) -> {
+                Map<String, Object> vendorExtensions = op.getVendorExtensions();
+                if (isIgnore(vendorExtensions)) {
+                    log.info("跳过 url:{}, type:{}", url, opType.name());
+                    return;
+                }
                 log.info("当前正在处理url:{}, type:{}", url, opType.name());
                 // 获取对应的controllerMeta
                 HandlerClass handlerClass = controllerMetaMap.get(op.getTags().get(0));
-                Map<String, Object> extParams = op.getVendorExtensions();
                 // 定义当前请求
                 HandlerMethod handlerMethod = new HandlerMethod();
                 handlerMethod.setUrl(url);
@@ -478,25 +487,25 @@ public class SwaggerResolver implements IResolver {
                 ));
 
                 // setting handlerMethod params
-                handlerMethod.setHandlerMethodParams(getHandlerMethodParams(op.getOperationId(), op.getParameters(), dtos, extParams));
+                handlerMethod.setHandlerMethodParams(getHandlerMethodParams(op.getOperationId(), op.getParameters(), dtos, vendorExtensions));
 
                 // setting handlerMethod return def
                 handlerMethod.setHandlerMethodReturn(getHandlerMethodReturn(op));
 
                 // 集成path上的注解, 当前方法的扩展注解
-                handlerMethod.getAnnotations().add(parseAnnotations(pathExtParams));
-                handlerMethod.getControllerAnnotations().add(parseControllerAnnotations(pathExtParams));
-                handlerMethod.getServiceAnnotations().add(parseServiceAnnotations(pathExtParams));
-                handlerMethod.getFeignClientAnnotations().add(parseFeignClientAnnotations(pathExtParams));
+                handlerMethod.getAnnotations().add(parseAnnotations(pathVendorExtensions));
+                handlerMethod.getControllerAnnotations().add(parseControllerAnnotations(pathVendorExtensions));
+                handlerMethod.getServiceAnnotations().add(parseServiceAnnotations(pathVendorExtensions));
+                handlerMethod.getFeignClientAnnotations().add(parseFeignClientAnnotations(pathVendorExtensions));
 
-                handlerMethod.getAnnotations().add(parseAnnotations(extParams));
-                handlerMethod.getControllerAnnotations().add(parseControllerAnnotations(extParams));
-                handlerMethod.getServiceAnnotations().add(parseServiceAnnotations(extParams));
-                handlerMethod.getFeignClientAnnotations().add(parseFeignClientAnnotations(extParams));
+                handlerMethod.getAnnotations().add(parseAnnotations(vendorExtensions));
+                handlerMethod.getControllerAnnotations().add(parseControllerAnnotations(vendorExtensions));
+                handlerMethod.getServiceAnnotations().add(parseServiceAnnotations(vendorExtensions));
+                handlerMethod.getFeignClientAnnotations().add(parseFeignClientAnnotations(vendorExtensions));
 
                 // 集成path上的import, 当前方法的import
-                handlerMethod.getImports().add(getImports(pathExtParams));
-                handlerMethod.getImports().add(getImports(extParams));
+                handlerMethod.getImports().add(getImports(pathVendorExtensions));
+                handlerMethod.getImports().add(getImports(vendorExtensions));
 
                 if (handlerMethod.enableRequestBody()) {
                     handlerMethod.getHandlerMethodParams()
