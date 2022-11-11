@@ -46,7 +46,9 @@ public class SwaggerOutput {
             params.put("handlerClass", controllerMeta);
             params.put("config", config);
             File file = new File(pathWrapper.getControllerPackagePath() + controllerMeta.getName() + ".java");
+            file.setWritable(true);
             VelocityUtils.render("template/Controller.vm", params, file);
+            file.setWritable(false);
         });
     }
 
@@ -63,7 +65,9 @@ public class SwaggerOutput {
             params.put("handlerClass", controllerMeta);
             params.put("config", config);
             File file = new File(pathWrapper.getServicePackagePath() + controllerMeta.getServiceName() + ".java");
+            file.setWritable(true);
             VelocityUtils.render("template/IService.vm", params, file);
+            file.setWritable(false);
         });
     }
 
@@ -81,7 +85,9 @@ public class SwaggerOutput {
             params.put("definition", dto);
             params.put("config", config);
             File file = new File(pathWrapper.getDtoPackagePath() + dto.getName() + ".java");
+            file.setWritable(true);
             VelocityUtils.render("template/Dto.vm", params, file);
+            file.setWritable(false);
         });
     }
 
@@ -98,7 +104,9 @@ public class SwaggerOutput {
             params.put("handlerClass", controllerMeta);
             params.put("config", config);
             File file = new File(pathWrapper.getFeignClientPackagePath() + controllerMeta.getFeignClientName() + ".java");
+            file.setWritable(true);
             VelocityUtils.render("template/FeignClient.vm", params, file);
+            file.setWritable(false);
         });
     }
 
