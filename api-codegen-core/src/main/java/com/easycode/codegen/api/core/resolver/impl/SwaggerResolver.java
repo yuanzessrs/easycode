@@ -538,16 +538,27 @@ public class SwaggerResolver implements IResolver {
      * @return 解析出来的dto定义
      */
     private List<Dto> parseDtos(Swagger swagger) {
-        return Optional.ofNullable(swagger)
-                .map(Swagger::getDefinitions)
-                .orElse(Collections.emptyMap())
+        Predicate<Model> modelExcludeFilter = model ->
+                !(model instanceof ModelImpl) || !SwaggerConstants.TYPE_OBJECT.equalsIgnoreCase(((ModelImpl) model).getType());
+        Predicate<Model> modelIncludeFilter = model -> !modelExcludeFilter.test(model);
+        Map<String, Model> definitions = Optional.ofNullable(swagger).map(Swagger::getDefinitions).orElse(Collections.emptyMap());
+        return definitions
                 .entrySet()
                 .stream()
                 .map(o -> {
                     String definitionName = o.getKey();
                     // 仅支持 type=object的 definition
-                    if (!(o.getValue() instanceof ModelImpl)
-                            || !SwaggerConstants.TYPE_OBJECT.equalsIgnoreCase(((ModelImpl) o.getValue()).getType())) {
+                    if (modelExcludeFilter.test(o.getValue())) {
+                        if (o.getValue() instanceof RefModel) {
+                            String refDefinitionName = ((RefModel) o.getValue()).getSimpleRef();
+                            return Optional.ofNullable(definitions.get(refDefinitionName))
+                                    .filter(modelIncludeFilter)
+                                    .map(model -> toDto(definitionName, (ModelImpl) model))
+                                    .orElseGet(() -> {
+                                        log.warn("$ref definition: {}, not found $ref in the current yaml.", refDefinitionName);
+                                        return null;
+                                    });
+                        }
                         log.warn("definition 只处理 type=object 的定义，已跳过当前定义:{}!", definitionName);
                         return null;
                     }
