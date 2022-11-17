@@ -24,11 +24,9 @@ public interface ${handlerClass.feignClientName} {
 #foreach($handlerMethod in $handlerClass.handlerMethods)
 
     /**
-     * <pre>
-     * $handlerMethod.summary @Summary
-     * </pre>
-     * $handlerMethod.description @Description
-     *
+     * <h1>$handlerMethod.summary</h1>
+     * $handlerMethod.description
+     * <p>
 #foreach($handlerMethodParam in $handlerMethod.handlerMethodParams)
      * @param ${handlerMethodParam.name} ${handlerMethodParam.description}
 #end
