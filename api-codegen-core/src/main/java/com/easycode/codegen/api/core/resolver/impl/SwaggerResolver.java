@@ -744,20 +744,19 @@ public class SwaggerResolver implements IResolver {
                     handlerClass.getFeignClientAnnotations().add(parseFeignClientAnnotations(tag.getVendorExtensions()));
                     handlerClass.getImports().add(getImports(tag.getVendorExtensions()));
 
-                    handlerClass.getControllerAnnotations().add(
-                            SpringAnnotations.Controller(),
-                            SpringAnnotations.Validated()
-                    );
-
-                    handlerClass.getFeignClientAnnotations().add(
-                            SpringAnnotations.FeignClient(
-                                    getFeignClientName(tag.getVendorExtensions()),
-                                    Optional.ofNullable(getFeignClientContextId(tag.getVendorExtensions())).orElse(tag.getName()),
-                                    getFeignClientPath(tag.getVendorExtensions()),
-                                    disableFeignClientPathQuotes(tag.getVendorExtensions())
-                            ),
-                            SpringAnnotations.Validated()
-                    );
+                    handlerClass.getControllerAnnotations().add(SpringAnnotations.Validated());
+                    handlerClass.getFeignClientAnnotations().add(SpringAnnotations.Validated());
+                    if (!isSkipRegisteringBean(tag.getVendorExtensions())) {
+                        handlerClass.getControllerAnnotations().add(SpringAnnotations.Controller());
+                        handlerClass.getFeignClientAnnotations().add(
+                                SpringAnnotations.FeignClient(
+                                        getFeignClientName(tag.getVendorExtensions()),
+                                        Optional.ofNullable(getFeignClientContextId(tag.getVendorExtensions())).orElse(tag.getName()),
+                                        getFeignClientPath(tag.getVendorExtensions()),
+                                        disableFeignClientPathQuotes(tag.getVendorExtensions())
+                                )
+                        );
+                    }
 
                     if (!ObjectUtils.isEmpty(handlerClass.getBasePath())) {
                         handlerClass.getControllerAnnotations()
