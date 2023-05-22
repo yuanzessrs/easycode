@@ -19,7 +19,8 @@ public class SwaggerVendorExtensions {
     }
 
     public static Map<String, String> getRenameMap(Map<String, Object> vendorExtensions) {
-        Object renameVal = vendorExtensions.get("x-rename-map");
+        Object renameVal = Optional.ofNullable(vendorExtensions.get("x-field-alias-map"))
+                .orElseGet(() -> vendorExtensions.get("x-rename-map"));
         if (renameVal == null) {
             return Collections.emptyMap();
         }
@@ -61,8 +62,8 @@ public class SwaggerVendorExtensions {
                 || "true".equalsIgnoreCase(getXFieldVal(vendorExtensions, "disabled"));
     }
 
-    public static boolean isSkipRegisteringBean(Map<String,Object> v){
-        return "true".equalsIgnoreCase(getXFieldVal(v,"skip-registering-bean"));
+    public static boolean isSkipRegisteringBean(Map<String, Object> v) {
+        return "true".equalsIgnoreCase(getXFieldVal(v, "skip-registering-bean"));
     }
 
     public static Optional<Boolean> getOptionalDisabledMergeQueryParam(Map<String, Object> vendorExtensions) {
