@@ -8,14 +8,18 @@ import com.easycode.codegen.api.core.util.SwaggerUtils;
 import io.swagger.models.Path;
 import io.swagger.models.Swagger;
 import io.swagger.util.Json;
-import org.apache.commons.io.FileUtils;
-import org.springframework.util.ObjectUtils;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.io.FileUtils;
+import org.springframework.util.ObjectUtils;
 
 /**
  * @class-name: SwaggerFormat
@@ -74,6 +78,25 @@ public class SwaggerFormat {
                             });
                         });
                     }
+
+                });
+            });
+
+            Optional.ofNullable(sourceToJson.getResponse()).ifPresent(response -> {
+                Optional.ofNullable(response.getDescriptionReplace()).ifPresent(descReplace -> {
+                    if (ObjectUtils.isEmpty(descReplace.getSource()) || ObjectUtils.isEmpty(descReplace.getTarget())) {
+                        throw new RuntimeException("source|target of source-to-json/response/descriptionReplace must have a value");
+                    }
+                    swaggers.forEach(swagger -> {
+                        swagger.getPaths().forEach((_1, path) -> {
+                            path.getOperationMap().forEach((_2, operation) -> {
+                                operation.getResponses().forEach((_3, resp) -> {
+                                    String finalDesc = Optional.ofNullable(resp.getDescription()).orElse("").replace(descReplace.getSource(), descReplace.getTarget());
+                                    resp.setDescription(finalDesc);
+                                });
+                            });
+                        });
+                    });
 
                 });
             });

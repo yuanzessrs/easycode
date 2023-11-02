@@ -1,10 +1,9 @@
 package com.easycode.codegen.api.core.input;
 
-import lombok.Data;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.Data;
 
 /**
  * @class-name: SwaggerOption
@@ -190,18 +189,18 @@ public class SwaggerOption {
         @Data
         public static class DefinitionOption {
 
-//            private List<DefinitionRename> renames;
-//
-//            @Data
-//            public static class DefinitionRename {
-//
-//                private String sourceName;
-//
-//                private String targetName;
-//
-//                private Boolean enabledRegex;
-//
-//            }
+            //            private List<DefinitionRename> renames;
+            //
+            //            @Data
+            //            public static class DefinitionRename {
+            //
+            //                private String sourceName;
+            //
+            //                private String targetName;
+            //
+            //                private Boolean enabledRegex;
+            //
+            //            }
 
 
             private Filter includeFilter;
@@ -263,10 +262,12 @@ public class SwaggerOption {
 
         private Param param;
 
+        private Response response;
+
         @Data
         public static class Path {
 
-            private Path.Replace replace;
+            private Replace replace;
 
             @Data
             public static class Replace {
@@ -288,6 +289,22 @@ public class SwaggerOption {
             public static class Filter {
 
                 private List<String> nameSelector;
+
+            }
+
+        }
+
+        @Data
+        public static class Response {
+
+            private Replace descriptionReplace;
+
+            @Data
+            public static class Replace {
+
+                private String source;
+
+                private String target;
 
             }
 
